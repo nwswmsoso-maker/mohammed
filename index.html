@@ -1,1 +1,73 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إدارة صالون محمد عدنان</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .customer { border: 1px solid #333; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        button { padding: 5px 15px; margin-right: 5px; cursor: pointer; }
+        .approve-btn { background-color: #4CAF50; color: white; border: none; }
+        .complete-btn { background-color: #f44336; color: white; border: none; }
+    </style>
+</head>
+<body>
+
+    <h1>لوحة تحكم الحلاق - محمد عدنان ✂️</h1>
+    <h2>قائمة الانتظار الحالية:</h2>
+    
+    <div id="queueList"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://hoskjuzxrmzuarobofp.supabase.co'; 
+        const SUPABASE_KEY = 'ضع_مفتاحك_هنا'; // ضع المفتاح هنا
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function fetchQueue() {
+            // جلب الزبائن الذين لم يكملوا الحلاقة بعد (الانتظار والموافق عليهم)
+            const { data, error } = await supabase
+                .from('appointments')
+                .select('*')
+                .in('status', ['pending', 'approved'])
+                .order('created_at', { ascending: true });
+
+            const listDiv = document.getElementById('queueList');
+            listDiv.innerHTML = '';
+
+            data.forEach(customer => {
+                const div = document.createElement('div');
+                div.className = 'customer';
+                
+                let buttons = '';
+                if (customer.status === 'pending') {
+                    buttons = `<button class="approve-btn" onclick="updateStatus(${customer.id}, 'approved')">استدعاء للكرسي</button>`;
+                } else if (customer.status === 'approved') {
+                    buttons = `<button class="complete-btn" onclick="updateStatus(${customer.id}, 'completed')">إنهاء وإخفاء</button>`;
+                }
+
+                div.innerHTML = `
+                    <strong>${customer.customer_name}</strong> - الحالة: ${customer.status === 'pending' ? 'ينتظر' : 'على الكرسي'}
+                    <br><br>
+                    ${buttons}
+                `;
+                listDiv.appendChild(div);
+            });
+        }
+
+        async function updateStatus(id, newStatus) {
+            await supabase
+                .from('appointments')
+                .update({ status: newStatus })
+                .eq('id', id);
+            
+            fetchQueue(); // تحديث القائمة بعد التعديل
+        }
+
+        // تحديث القائمة فور فتح الصفحة وكل 5 ثواني
+        fetchQueue();
+        setInterval(fetchQueue, 5000);
+    </script>
+</body>
+</html>
 
