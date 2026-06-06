@@ -2,267 +2,107 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <!-- منع التقريب التلقائي ليكون مثل التطبيق الحقيقي -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>إدارة صالون محمد عدنان</title>
-    
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
         :root {
-            --bg-color: #0f1115;
-            --card-bg: #1a1d24;
-            --primary-gold: #d4af37;
-            --primary-gold-hover: #b5952f;
-            --text-main: #ffffff;
-            --text-muted: #8b8d93;
+            --bg: #0f1115;
+            --card: #1a1d24;
+            --gold: #d4af37;
+            --gold-hover: #b5952f;
+            --muted: #8b8d93;
             --success: #28a745;
             --danger: #dc3545;
         }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: #fff; min-height: 100vh; padding-bottom: 30px; }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Cairo', sans-serif;
-            -webkit-tap-highlight-color: transparent; /* إزالة مربع اللمس الأزرق المزعج في الموبايل */
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            min-height: 100vh;
-            padding-bottom: 30px;
-        }
-
-        /* شريط التنقل العلوي للموبايل */
         .top-navbar {
-            background-color: var(--card-bg);
+            background: var(--card);
             padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
             position: sticky;
             top: 0;
             z-index: 100;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logo-area i {
-            font-size: 24px;
-            color: var(--primary-gold);
-        }
-
-        .logo-area h2 {
-            font-size: 18px;
-            font-weight: 800;
-        }
-
-        .logo-area span {
-            color: var(--primary-gold);
-        }
-
+        .logo-area { display: flex; align-items: center; gap: 10px; }
+        .logo-area i { font-size: 24px; color: var(--gold); }
+        .logo-area h2 { font-size: 18px; font-weight: 800; }
+        .logo-area span { color: var(--gold); }
         .clock-area {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--primary-gold);
-            background: rgba(212, 175, 55, 0.1);
-            padding: 5px 10px;
-            border-radius: 8px;
+            font-size: 14px; font-weight: 700; color: var(--gold);
+            background: rgba(212,175,55,0.1); padding: 5px 10px; border-radius: 8px;
         }
 
-        /* الحاوية الرئيسية */
-        .container {
-            padding: 20px;
-        }
+        .container { padding: 20px; }
 
-        /* شبكة الإحصائيات - بطاقتين بجانب بعض للموبايل */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
         .stat-card {
-            background-color: var(--card-bg);
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: var(--card); padding: 15px; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05); text-align: center;
         }
-
         .stat-icon {
-            width: 40px;
-            height: 40px;
-            margin: 0 auto 10px;
-            border-radius: 10px;
-            background-color: rgba(212, 175, 55, 0.1);
-            color: var(--primary-gold);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
+            width: 40px; height: 40px; margin: 0 auto 10px; border-radius: 10px;
+            background: rgba(212,175,55,0.1); color: var(--gold);
+            display: flex; align-items: center; justify-content: center; font-size: 18px;
         }
+        .stat-info h4 { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
+        .stat-info h2 { font-size: 22px; font-weight: 800; }
 
-        .stat-info h4 {
-            color: var(--text-muted);
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .stat-info h2 {
-            font-size: 22px;
-            font-weight: 800;
-        }
-
-        /* قسم الحجوزات */
-        .section-title {
-            font-size: 18px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-main);
-        }
-
-        .queue-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+        .section-title { font-size: 18px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .queue-grid { display: flex; flex-direction: column; gap: 15px; }
 
         .customer-card {
-            background-color: var(--card-bg);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            background: var(--card); border-radius: 15px; padding: 20px;
+            border: 1px solid rgba(255,255,255,0.05); position: relative;
+            overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            animation: slideIn 0.4s ease;
         }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .card-status-bar {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 4px;
-            height: 100%;
-        }
-        .status-pending { background-color: var(--primary-gold); }
-        .status-approved { background-color: var(--success); }
+        .card-status-bar { position: absolute; top: 0; right: 0; width: 4px; height: 100%; }
+        .status-pending { background: var(--gold); }
+        .status-approved { background: var(--success); }
 
-        .customer-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 15px;
-        }
-
-        .customer-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        .customer-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .customer-info { display: flex; align-items: center; gap: 12px; }
         .customer-avatar {
-            width: 45px;
-            height: 45px;
-            background-color: rgba(255,255,255,0.05);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: var(--text-muted);
+            width: 45px; height: 45px; background: rgba(255,255,255,0.05);
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 18px; color: var(--muted);
         }
-
-        .customer-details h3 {
-            font-size: 16px;
-            margin-bottom: 4px;
-        }
-
-        .service-tag {
-            display: inline-block;
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        .status-badge {
-            font-size: 11px;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-weight: 700;
-        }
-        .badge-pending { background-color: rgba(212, 175, 55, 0.1); color: var(--primary-gold); }
-        .badge-approved { background-color: rgba(40, 167, 69, 0.1); color: var(--success); }
+        .customer-details h3 { font-size: 16px; margin-bottom: 4px; }
+        .status-badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; white-space: nowrap; }
+        .badge-pending { background: rgba(212,175,55,0.1); color: var(--gold); }
+        .badge-approved { background: rgba(40,167,69,0.1); color: var(--success); }
 
         .btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 15px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            width: 100%; padding: 14px; border: none; border-radius: 10px;
+            font-weight: 700; font-size: 15px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-family: 'Cairo', sans-serif; transition: all 0.2s;
         }
-
-        .btn-call {
-            background-color: var(--primary-gold);
-            color: #000;
-        }
-
-        .btn-call:active {
-            transform: scale(0.98);
-            background-color: var(--primary-gold-hover);
-        }
-
-        .btn-done {
-            background-color: transparent;
-            color: var(--success);
-            border: 1px solid var(--success);
-        }
-
-        .btn-done:active {
-            transform: scale(0.98);
-            background-color: rgba(40, 167, 69, 0.1);
-        }
+        .btn-call { background: var(--gold); color: #000; }
+        .btn-call:active { transform: scale(0.98); background: var(--gold-hover); }
+        .btn-done { background: transparent; color: var(--success); border: 1px solid var(--success); }
+        .btn-done:active { transform: scale(0.98); background: rgba(40,167,69,0.1); }
 
         .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
-            background-color: var(--card-bg);
-            border-radius: 15px;
+            text-align: center; padding: 40px 20px; color: var(--muted);
+            background: var(--card); border-radius: 15px;
             border: 1px dashed rgba(255,255,255,0.1);
         }
-        
-        .empty-state i {
-            font-size: 40px;
-            margin-bottom: 15px;
-            color: rgba(255,255,255,0.1);
-        }
+        .empty-state i { font-size: 40px; margin-bottom: 15px; color: rgba(255,255,255,0.1); display: block; }
     </style>
 </head>
 <body>
-
-    <!-- الشريط العلوي (بديل القائمة الجانبية) -->
     <header class="top-navbar">
         <div class="logo-area">
             <i class="fa-solid fa-scissors"></i>
@@ -272,105 +112,89 @@
     </header>
 
     <div class="container">
-        <!-- الإحصائيات (تظهر كبطاقات صغيرة بجانب بعضها) -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
-                <div class="stat-info">
-                    <h4>في الانتظار</h4>
-                    <h2 id="pendingCount">0</h2>
-                </div>
+                <div class="stat-info"><h4>في الانتظار</h4><h2 id="pendingCount">0</h2></div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon"><i class="fa-solid fa-chair"></i></div>
-                <div class="stat-info">
-                    <h4>على الكرسي</h4>
-                    <h2 id="approvedCount">0</h2>
-                </div>
+                <div class="stat-info"><h4>على الكرسي</h4><h2 id="approvedCount">0</h2></div>
             </div>
         </div>
 
-        <!-- قائمة الحجوزات -->
         <h3 class="section-title"><i class="fa-regular fa-clock"></i> الزبائن الحاليين</h3>
-        <div class="queue-grid" id="queueList">
-            <!-- البطاقات ستظهر هنا -->
-        </div>
+        <div class="queue-grid" id="queueList"></div>
     </div>
 
     <script>
-        // إعداد Supabase (ضع مفتاحك هنا)
-        const SUPABASE_URL = 'https://hoskjuzxrmzuarobofp.supabase.co'; 
-        const SUPABASE_KEY = 'ضع_مفتاحك_هنا'; 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // ✅ الإعداد الصحيح مع URL الصحيح
+        const SUPABASE_URL = 'https://hoskjuzkxrmzuarobofp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhvc2tqdXpreHJtenVhcm9ib2ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NTI0OTQsImV4cCI6MjA5NjMyODQ5NH0.djwG-Oybxf3rKyxvLlrClAMkdjyMw-_vTMyGJmOO-30';
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // تحديث الساعة
-        setInterval(() => {
+        // الساعة
+        function updateClock() {
             const now = new Date();
             document.getElementById('clock').innerText = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
-        }, 1000);
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
 
         async function fetchQueue() {
-            const { data, error } = await supabase
+            const { data, error } = await db
                 .from('appointments')
-                .select('*, services(service_name)') 
+                .select('*')
                 .in('status', ['pending', 'approved'])
-                .order('created_at', { ascending: true });
+                .order('id', { ascending: true });
 
-            if (error) {
-                console.error("خطأ:", error);
-                return;
-            }
+            if (error) { console.error('خطأ:', error); return; }
 
             const listDiv = document.getElementById('queueList');
             listDiv.innerHTML = '';
 
-            let pending = 0;
-            let approved = 0;
+            let pending = 0, approved = 0;
 
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 listDiv.innerHTML = `
                     <div class="empty-state">
                         <i class="fa-solid fa-mug-hot"></i>
                         <h3>لا يوجد زبائن حالياً</h3>
-                        <p style="font-size: 13px; margin-top: 5px;">شارك رابط الحجز مع زبائنك!</p>
+                        <p style="font-size:13px;margin-top:5px;">شارك رابط الحجز مع زبائنك!</p>
                     </div>`;
             } else {
-                data.forEach(customer => {
-                    if(customer.status === 'pending') pending++;
-                    if(customer.status === 'approved') approved++;
+                data.forEach(c => {
+                    if (c.status === 'pending') pending++;
+                    if (c.status === 'approved') approved++;
 
-                    const serviceName = customer.services ? customer.services.service_name : 'غير محدد';
-                    const isPending = customer.status === 'pending';
-
+                    const isPending = c.status === 'pending';
                     const card = document.createElement('div');
                     card.className = 'customer-card';
                     card.innerHTML = `
                         <div class="card-status-bar ${isPending ? 'status-pending' : 'status-approved'}"></div>
-                        
                         <div class="customer-header">
                             <div class="customer-info">
-                                <div class="customer-avatar">
-                                    <i class="fa-solid fa-user"></i>
-                                </div>
+                                <div class="customer-avatar"><i class="fa-solid fa-user"></i></div>
                                 <div class="customer-details">
-                                    <h3>${customer.customer_name}</h3>
-                                    <span class="service-tag"><i class="fa-solid fa-scissors"></i> الخدمة: ${serviceName}</span>
+                                    <h3>${c.customer_name}</h3>
+                                    <span style="font-size:11px;color:var(--muted);">
+                                        <i class="fa-regular fa-clock"></i>
+                                        ${new Date(c.created_at).toLocaleTimeString('ar-IQ', {hour:'2-digit',minute:'2-digit'})}
+                                    </span>
                                 </div>
                             </div>
                             <span class="status-badge ${isPending ? 'badge-pending' : 'badge-approved'}">
                                 ${isPending ? 'ينتظر' : 'يحلق الآن'}
                             </span>
                         </div>
-                        
-                        <div style="margin-top: 15px;">
-                            ${isPending ? 
-                                `<button class="btn btn-call" onclick="updateStatus(${customer.id}, 'approved')">
-                                    <i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي
-                                </button>` 
-                                : 
-                                `<button class="btn btn-done" onclick="updateStatus(${customer.id}, 'completed')">
-                                    <i class="fa-solid fa-check-double"></i> إنهاء الخدمة وإخفاء
-                                </button>`
+                        <div>
+                            ${isPending
+                                ? `<button class="btn btn-call" onclick="updateStatus(${c.id},'approved')">
+                                        <i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي
+                                   </button>`
+                                : `<button class="btn btn-done" onclick="updateStatus(${c.id},'completed')">
+                                        <i class="fa-solid fa-check-double"></i> إنهاء الخدمة
+                                   </button>`
                             }
                         </div>
                     `;
@@ -383,12 +207,13 @@
         }
 
         async function updateStatus(id, newStatus) {
-            await supabase
+            const { error } = await db
                 .from('appointments')
                 .update({ status: newStatus })
                 .eq('id', id);
-            
-            fetchQueue(); 
+
+            if (error) { alert('خطأ: ' + error.message); return; }
+            fetchQueue();
         }
 
         fetchQueue();
