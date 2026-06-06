@@ -60,26 +60,35 @@
         .toggle-btn.open::after  { left: 34px; }
         .toggle-btn.closed::after { left: 4px; }
 
+        /* ── Stats ── */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .stat-card { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center; }
+
+        .stat-card {
+            background: var(--card); padding: 15px; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05); text-align: center;
+            cursor: default; transition: all 0.2s;
+        }
+        /* فقط كارد الانتظار قابل للضغط */
+        .stat-card.clickable {
+            cursor: pointer;
+            border-color: rgba(212,175,55,0.15);
+        }
+        .stat-card.clickable:hover { background: #1f2330; border-color: rgba(212,175,55,0.35); }
+        .stat-card.clickable:active { transform: scale(0.97); }
+
         .stat-icon { width: 40px; height: 40px; margin: 0 auto 10px; border-radius: 10px; background: rgba(212,175,55,0.1); color: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 18px; }
         .stat-info h4 { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
         .stat-info h2 { font-size: 22px; font-weight: 800; }
+        .tap-hint { font-size: 10px; color: var(--gold); margin-top: 5px; opacity: 0.7; }
 
         .section-title { font-size: 18px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
         .queue-grid { display: flex; flex-direction: column; gap: 15px; }
 
-        /* ── رقم الدور ── */
         .turn-badge {
-            position: absolute;
-            top: 14px;
-            left: 16px;
-            width: 30px; height: 30px;
-            border-radius: 50%;
-            background: rgba(212,175,55,0.12);
-            border: 1px solid rgba(212,175,55,0.3);
-            color: var(--gold);
-            font-size: 13px; font-weight: 800;
+            position: absolute; top: 14px; left: 16px;
+            width: 30px; height: 30px; border-radius: 50%;
+            background: rgba(212,175,55,0.12); border: 1px solid rgba(212,175,55,0.3);
+            color: var(--gold); font-size: 13px; font-weight: 800;
             display: flex; align-items: center; justify-content: center;
         }
 
@@ -89,11 +98,7 @@
             overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             animation: slideIn 0.4s ease;
         }
-        /* أول بطاقة تبرز أكثر */
-        .customer-card.first-in-queue {
-            border-color: rgba(212,175,55,0.25);
-            box-shadow: 0 4px 20px rgba(212,175,55,0.1);
-        }
+        .customer-card.first-in-queue { border-color: rgba(212,175,55,0.25); box-shadow: 0 4px 20px rgba(212,175,55,0.1); }
 
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -106,23 +111,13 @@
         .customer-avatar { width: 45px; height: 45px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--muted); flex-shrink: 0; }
         .customer-details h3 { font-size: 16px; margin-bottom: 3px; }
 
-        /* ── رقم الموبايل ── */
-        .phone-row {
-            display: flex; align-items: center; gap: 6px;
-            margin-bottom: 12px;
-        }
+        .phone-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
         .phone-btn {
             display: inline-flex; align-items: center; gap: 7px;
-            background: rgba(212,175,55,0.08);
-            border: 1px solid rgba(212,175,55,0.2);
-            border-radius: 30px;
-            padding: 6px 14px;
-            color: #cbd5e0;
-            text-decoration: none;
-            font-size: 14px; font-weight: 700;
-            direction: ltr;
-            letter-spacing: 0.5px;
-            transition: all 0.2s;
+            background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.2);
+            border-radius: 30px; padding: 6px 14px;
+            color: #cbd5e0; text-decoration: none;
+            font-size: 14px; font-weight: 700; direction: ltr; letter-spacing: 0.5px; transition: all 0.2s;
         }
         .phone-btn i { color: var(--gold); font-size: 13px; }
         .phone-btn:hover, .phone-btn:active { background: rgba(212,175,55,0.18); color: var(--gold); }
@@ -149,6 +144,88 @@
             box-shadow: 0 5px 25px rgba(212,175,55,0.5); white-space: nowrap;
         }
         @keyframes bannerPop { from { transform: translateX(-50%) scale(0.7); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+
+        /* ══════════════════════════════
+           ── قائمة الانتظار المنبثقة ──
+        ══════════════════════════════ */
+        .drawer-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7); z-index: 200;
+            backdrop-filter: blur(3px);
+        }
+        .drawer-overlay.show { display: block; }
+
+        .drawer {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: #13161e;
+            border-radius: 28px 28px 0 0;
+            border-top: 1px solid rgba(212,175,55,0.15);
+            z-index: 300;
+            max-height: 80vh;
+            display: flex; flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        }
+        .drawer.open { transform: translateY(0); }
+
+        .drawer-handle {
+            width: 40px; height: 4px; background: rgba(255,255,255,0.15);
+            border-radius: 2px; margin: 14px auto 0;
+            cursor: pointer; flex-shrink: 0;
+        }
+
+        .drawer-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 20px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+        .drawer-header h3 { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        .drawer-header h3 i { color: var(--gold); }
+        .drawer-close {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: rgba(255,255,255,0.07); border: none; color: #fff;
+            font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+
+        .drawer-body {
+            overflow-y: auto; padding: 16px;
+            flex: 1;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+
+        /* بطاقة مصغرة داخل الـ drawer */
+        .queue-row {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 14px 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex; align-items: center; gap: 14px;
+            animation: slideIn 0.3s ease;
+        }
+        .queue-row.first { border-color: rgba(212,175,55,0.3); background: rgba(212,175,55,0.05); }
+
+        .qr-num {
+            width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px; font-weight: 900;
+            background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.25);
+            color: var(--gold);
+        }
+        .qr-num.first-num { background: var(--gold); color: #000; border: none; }
+
+        .qr-info { flex: 1; min-width: 0; }
+        .qr-info h4 { font-size: 15px; font-weight: 700; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .qr-info .qr-phone {
+            font-size: 12px; color: var(--muted); direction: ltr;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .qr-info .qr-phone i { color: var(--gold); font-size: 11px; }
+        .qr-time { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+
+        .drawer-empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+        .drawer-empty i { font-size: 36px; display: block; margin-bottom: 12px; opacity: 0.3; }
     </style>
 </head>
 <body>
@@ -177,10 +254,16 @@
         </div>
 
         <div class="stats-grid">
-            <div class="stat-card">
+            <!-- كارد الانتظار — قابل للضغط -->
+            <div class="stat-card clickable" onclick="openDrawer()">
                 <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
-                <div class="stat-info"><h4>في الانتظار</h4><h2 id="pendingCount">0</h2></div>
+                <div class="stat-info">
+                    <h4>في الانتظار</h4>
+                    <h2 id="pendingCount">0</h2>
+                </div>
+                <div class="tap-hint">اضغط لعرض القائمة ▼</div>
             </div>
+            <!-- كارد الكرسي — عادي -->
             <div class="stat-card">
                 <div class="stat-icon"><i class="fa-solid fa-chair"></i></div>
                 <div class="stat-info"><h4>على الكرسي</h4><h2 id="approvedCount">0</h2></div>
@@ -191,6 +274,19 @@
         <div class="queue-grid" id="queueList"></div>
     </div>
 
+    <!-- Drawer overlay -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+    <!-- Drawer -->
+    <div class="drawer" id="drawer">
+        <div class="drawer-handle" onclick="closeDrawer()"></div>
+        <div class="drawer-header">
+            <h3><i class="fa-solid fa-list-ol"></i> قائمة الانتظار</h3>
+            <button class="drawer-close" onclick="closeDrawer()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="drawer-body" id="drawerBody"></div>
+    </div>
+
     <script>
         const SUPABASE_URL = 'https://hoskjuzkxrmzuarobofp.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhvc2tqdXpreHJtenVhcm9ib2ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NTI0OTQsImV4cCI6MjA5NjMyODQ5NH0.djwG-Oybxf3rKyxvLlrClAMkdjyMw-_vTMyGJmOO-30';
@@ -199,6 +295,7 @@
         let knownIds = new Set();
         let firstLoad = true;
         let currentIsOpen = true;
+        let cachedPending = []; // نحفظ المنتظرين للـ drawer
 
         function updateClock() {
             const now = new Date();
@@ -208,6 +305,7 @@
         updateClock();
         setInterval(updateClock, 1000);
 
+        /* ── Toggle ── */
         function renderToggle(isOpen) {
             currentIsOpen = isOpen;
             const icon  = document.getElementById('toggleIcon');
@@ -216,23 +314,19 @@
             if (isOpen) {
                 icon.className  = 'toggle-icon open';
                 icon.innerHTML  = '<i class="fa-solid fa-door-open"></i>';
-                label.className = 'open';
-                label.innerText = 'مفتوح الآن';
+                label.className = 'open'; label.innerText = 'مفتوح الآن';
                 btn.className   = 'toggle-btn open';
             } else {
                 icon.className  = 'toggle-icon closed';
                 icon.innerHTML  = '<i class="fa-solid fa-door-closed"></i>';
-                label.className = 'closed';
-                label.innerText = 'مغلق الآن';
+                label.className = 'closed'; label.innerText = 'مغلق الآن';
                 btn.className   = 'toggle-btn closed';
             }
         }
-
         async function fetchStatus() {
             const { data, error } = await db.from('salon_status').select('is_open').eq('id', 1).single();
             if (!error && data) renderToggle(data.is_open);
         }
-
         async function toggleStatus() {
             const newStatus = !currentIsOpen;
             renderToggle(newStatus);
@@ -240,17 +334,13 @@
             if (error) { alert('خطأ: ' + error.message); renderToggle(!newStatus); }
         }
 
+        /* ── Sound ── */
         function playNewBookingSound() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const pattern = [
-                    { freq: 880, start: 0.0, dur: 0.15 },
-                    { freq: 880, start: 0.2, dur: 0.15 },
-                    { freq: 1100, start: 0.4, dur: 0.3 },
-                ];
-                pattern.forEach(n => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
+                [{ freq: 880, start: 0.0, dur: 0.15 }, { freq: 880, start: 0.2, dur: 0.15 }, { freq: 1100, start: 0.4, dur: 0.3 }]
+                .forEach(n => {
+                    const osc = ctx.createOscillator(), gain = ctx.createGain();
                     osc.connect(gain); gain.connect(ctx.destination);
                     osc.type = 'square'; osc.frequency.value = n.freq;
                     const s = ctx.currentTime + n.start;
@@ -264,24 +354,56 @@
 
         function showNewBanner() {
             const b = document.getElementById('newBanner');
-            b.style.display = 'block';
-            b.style.animation = 'bannerPop 0.4s ease';
+            b.style.display = 'block'; b.style.animation = 'bannerPop 0.4s ease';
             setTimeout(() => { b.style.display = 'none'; }, 3000);
         }
 
+        /* ── Drawer ── */
+        function openDrawer() {
+            renderDrawer();
+            document.getElementById('drawerOverlay').classList.add('show');
+            document.getElementById('drawer').classList.add('open');
+        }
+        function closeDrawer() {
+            document.getElementById('drawerOverlay').classList.remove('show');
+            document.getElementById('drawer').classList.remove('open');
+        }
+        function renderDrawer() {
+            const body = document.getElementById('drawerBody');
+            body.innerHTML = '';
+            if (cachedPending.length === 0) {
+                body.innerHTML = `<div class="drawer-empty"><i class="fa-solid fa-couch"></i><p>لا يوجد زبائن في الانتظار</p></div>`;
+                return;
+            }
+            cachedPending.forEach((c, i) => {
+                const isFirst = i === 0;
+                const timeStr = new Date(c.created_at).toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+                const row = document.createElement('div');
+                row.className = `queue-row${isFirst ? ' first' : ''}`;
+                row.innerHTML = `
+                    <div class="qr-num${isFirst ? ' first-num' : ''}">${i + 1}</div>
+                    <div class="qr-info">
+                        <h4>${c.customer_name}${isFirst ? ' <span style="font-size:11px;color:var(--gold);">← التالي</span>' : ''}</h4>
+                        ${c.phone
+                            ? `<a class="qr-phone" href="tel:${c.phone}"><i class="fas fa-phone-alt"></i>${c.phone}</a>`
+                            : `<span class="qr-phone">لا يوجد رقم</span>`}
+                    </div>
+                    <div class="qr-time">${timeStr}</div>`;
+                body.appendChild(row);
+            });
+        }
+
+        /* ── Main queue fetch ── */
         async function fetchQueue() {
             const { data, error } = await db
                 .from('appointments')
                 .select('*')
                 .in('status', ['pending', 'approved'])
-                .order('id', { ascending: true }); // ✅ أول زبون فوق
+                .order('id', { ascending: true });
 
             if (error) return;
 
-            const listDiv = document.getElementById('queueList');
-            let pending = 0, approved = 0;
             const currentIds = new Set((data || []).map(c => c.id));
-
             if (!firstLoad) {
                 let hasNew = false;
                 currentIds.forEach(id => { if (!knownIds.has(id)) hasNew = true; });
@@ -290,78 +412,63 @@
             knownIds = currentIds;
             firstLoad = false;
 
+            // فصل المنتظرين عن الكرسي
+            cachedPending = (data || []).filter(c => c.status === 'pending');
+            const approved  = (data || []).filter(c => c.status === 'approved');
+            const sorted    = [...approved, ...cachedPending];
+
+            document.getElementById('pendingCount').innerText  = cachedPending.length;
+            document.getElementById('approvedCount').innerText = approved.length;
+
+            // إذا الـ drawer مفتوح نحدثه
+            if (document.getElementById('drawer').classList.contains('open')) renderDrawer();
+
+            const listDiv = document.getElementById('queueList');
             listDiv.innerHTML = '';
 
-            if (!data || data.length === 0) {
+            if (sorted.length === 0) {
                 listDiv.innerHTML = `
                     <div class="empty-state">
                         <i class="fa-solid fa-mug-hot"></i>
                         <h3>لا يوجد زبائن حالياً</h3>
                         <p style="font-size:13px;margin-top:5px;">شارك رابط الحجز مع زبائنك!</p>
                     </div>`;
-            } else {
-                // الـ approved يكون أول شي دائماً، ثم pending بالترتيب
-                const sorted = [
-                    ...data.filter(c => c.status === 'approved'),
-                    ...data.filter(c => c.status === 'pending'),
-                ];
-
-                sorted.forEach((c, index) => {
-                    if (c.status === 'pending')  pending++;
-                    if (c.status === 'approved') approved++;
-
-                    const isPending   = c.status === 'pending';
-                    const isFirst     = index === 0 && isPending; // أول شخص ينتظر
-                    const turnNumber  = index + 1;
-                    const timeStr     = new Date(c.created_at).toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
-
-                    // رقم الموبايل
-                    const phoneHtml = c.phone
-                        ? `<a class="phone-btn" href="tel:${c.phone}">
-                               <i class="fas fa-phone-alt"></i>${c.phone}
-                           </a>`
-                        : `<span class="no-phone">لا يوجد رقم</span>`;
-
-                    const card = document.createElement('div');
-                    card.className = `customer-card${!isPending ? '' : isFirst ? ' first-in-queue' : ''}`;
-                    card.innerHTML = `
-                        <div class="card-status-bar ${isPending ? 'status-pending' : 'status-approved'}"></div>
-                        ${isPending ? `<div class="turn-badge">${turnNumber}</div>` : ''}
-
-                        <div class="customer-header">
-                            <div class="customer-info">
-                                <div class="customer-avatar"><i class="fa-solid fa-user"></i></div>
-                                <div class="customer-details">
-                                    <h3>${c.customer_name}</h3>
-                                    <span style="font-size:11px;color:var(--muted);">
-                                        <i class="fa-regular fa-clock"></i> ${timeStr}
-                                    </span>
-                                </div>
-                            </div>
-                            <span class="status-badge ${isPending ? 'badge-pending' : 'badge-approved'}">
-                                ${isPending ? 'ينتظر' : '✂️ يحلق الآن'}
-                            </span>
-                        </div>
-
-                        <!-- رقم الموبايل -->
-                        <div class="phone-row">${phoneHtml}</div>
-
-                        <div>
-                            ${isPending
-                                ? `<button class="btn btn-call" onclick="updateStatus(${c.id},'approved')">
-                                       <i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي
-                                   </button>`
-                                : `<button class="btn btn-done" onclick="updateStatus(${c.id},'completed')">
-                                       <i class="fa-solid fa-check-double"></i> إنهاء الخدمة
-                                   </button>`
-                            }
-                        </div>`;
-                    listDiv.appendChild(card);
-                });
+                return;
             }
 
-            document.getElementById('pendingCount').innerText = pending;
-            document.getElementById('approvedCount').innerText = approved;
+            sorted.forEach((c, index) => {
+                const isPending = c.status === 'pending';
+                const isFirst   = index === 0 && isPending;
+                const timeStr   = new Date(c.created_at).toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+                const phoneHtml = c.phone
+                    ? `<a class="phone-btn" href="tel:${c.phone}"><i class="fas fa-phone-alt"></i>${c.phone}</a>`
+                    : `<span class="no-phone">لا يوجد رقم</span>`;
+
+                const card = document.createElement('div');
+                card.className = `customer-card${isFirst ? ' first-in-queue' : ''}`;
+                card.innerHTML = `
+                    <div class="card-status-bar ${isPending ? 'status-pending' : 'status-approved'}"></div>
+                    ${isPending ? `<div class="turn-badge">${cachedPending.indexOf(c) + 1}</div>` : ''}
+                    <div class="customer-header">
+                        <div class="customer-info">
+                            <div class="customer-avatar"><i class="fa-solid fa-user"></i></div>
+                            <div class="customer-details">
+                                <h3>${c.customer_name}</h3>
+                                <span style="font-size:11px;color:var(--muted);"><i class="fa-regular fa-clock"></i> ${timeStr}</span>
+                            </div>
+                        </div>
+                        <span class="status-badge ${isPending ? 'badge-pending' : 'badge-approved'}">
+                            ${isPending ? 'ينتظر' : '✂️ يحلق الآن'}
+                        </span>
+                    </div>
+                    <div class="phone-row">${phoneHtml}</div>
+                    <div>
+                        ${isPending
+                            ? `<button class="btn btn-call" onclick="updateStatus(${c.id},'approved')"><i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي</button>`
+                            : `<button class="btn btn-done" onclick="updateStatus(${c.id},'completed')"><i class="fa-solid fa-check-double"></i> إنهاء الخدمة</button>`}
+                    </div>`;
+                listDiv.appendChild(card);
+            });
         }
 
         async function updateStatus(id, newStatus) {
@@ -375,5 +482,16 @@
         setInterval(fetchQueue,  3000);
         setInterval(fetchStatus, 5000);
     </script>
+
+    <!-- styles for phone inside cards (carried from previous) -->
+    <style>
+        .phone-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+        .phone-btn { display: inline-flex; align-items: center; gap: 7px; background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.2); border-radius: 30px; padding: 6px 14px; color: #cbd5e0; text-decoration: none; font-size: 14px; font-weight: 700; direction: ltr; letter-spacing: 0.5px; transition: all 0.2s; }
+        .phone-btn i { color: var(--gold); font-size: 13px; }
+        .phone-btn:hover, .phone-btn:active { background: rgba(212,175,55,0.18); color: var(--gold); }
+        .no-phone { font-size: 12px; color: var(--muted); font-style: italic; }
+        .qr-phone { color: var(--muted); text-decoration: none; }
+        .qr-phone:hover { color: var(--gold); }
+    </style>
 </body>
 </html>
