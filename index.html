@@ -29,6 +29,38 @@
         .clock-area { font-size: 14px; font-weight: 700; color: var(--gold); background: rgba(212,175,55,0.1); padding: 5px 10px; border-radius: 8px; }
 
         .container { padding: 20px; }
+
+        /* ✅ زر المفتوح/المغلق الكبير */
+        .toggle-card {
+            background: var(--card); border-radius: 18px; padding: 20px 25px;
+            border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .toggle-info { display: flex; align-items: center; gap: 12px; }
+        .toggle-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; transition: all 0.4s; }
+        .toggle-icon.open  { background: rgba(46,213,115,0.15); color: #2ed573; }
+        .toggle-icon.closed { background: rgba(220,53,69,0.15); color: var(--danger); }
+        .toggle-label h4 { font-size: 14px; color: var(--muted); margin-bottom: 3px; }
+        .toggle-label h3 { font-size: 18px; font-weight: 800; }
+        .toggle-label h3.open   { color: #2ed573; }
+        .toggle-label h3.closed { color: var(--danger); }
+
+        .toggle-btn {
+            width: 64px; height: 34px; border-radius: 17px; border: none; cursor: pointer;
+            position: relative; transition: background 0.4s ease; flex-shrink: 0;
+        }
+        .toggle-btn.open   { background: #2ed573; }
+        .toggle-btn.closed { background: #444; }
+        .toggle-btn::after {
+            content: ''; position: absolute; top: 4px;
+            width: 26px; height: 26px; background: #fff; border-radius: 50%;
+            transition: left 0.4s ease, right 0.4s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .toggle-btn.open::after  { left: 34px; }
+        .toggle-btn.closed::after { left: 4px; }
+
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
         .stat-card { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center; }
         .stat-icon { width: 40px; height: 40px; margin: 0 auto 10px; border-radius: 10px; background: rgba(212,175,55,0.1); color: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 18px; }
@@ -44,10 +76,7 @@
             overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             animation: slideIn 0.4s ease;
         }
-        /* ✅ كارت جديد يومض مرة */
-        .customer-card.new-flash { animation: slideIn 0.4s ease, flashNew 1s ease; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes flashNew { 0%,100% { box-shadow: 0 4px 15px rgba(0,0,0,0.15); } 50% { box-shadow: 0 0 30px rgba(212,175,55,0.6); } }
 
         .card-status-bar { position: absolute; top: 0; right: 0; width: 4px; height: 100%; }
         .status-pending { background: var(--gold); }
@@ -70,15 +99,12 @@
         .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); background: var(--card); border-radius: 15px; border: 1px dashed rgba(255,255,255,0.1); }
         .empty-state i { font-size: 40px; margin-bottom: 15px; color: rgba(255,255,255,0.1); display: block; }
 
-        /* ✅ بانر تنبيه زبون جديد */
         .new-banner {
             display: none; position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
             background: linear-gradient(135deg, #d4af37, #f3cf55);
             color: #000; font-size: 16px; font-weight: 800;
             padding: 12px 25px; border-radius: 50px; z-index: 500;
-            box-shadow: 0 5px 25px rgba(212,175,55,0.5);
-            animation: bannerPop 0.4s ease;
-            white-space: nowrap;
+            box-shadow: 0 5px 25px rgba(212,175,55,0.5); white-space: nowrap;
         }
         @keyframes bannerPop { from { transform: translateX(-50%) scale(0.7); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
     </style>
@@ -93,10 +119,22 @@
         <div class="clock-area" id="clock">00:00</div>
     </header>
 
-    <!-- بانر زبون جديد -->
     <div class="new-banner" id="newBanner">🔔 زبون جديد حجز!</div>
 
     <div class="container">
+
+        <!-- ✅ زر المفتوح/المغلق -->
+        <div class="toggle-card">
+            <div class="toggle-info">
+                <div class="toggle-icon" id="toggleIcon"><i class="fa-solid fa-store"></i></div>
+                <div class="toggle-label">
+                    <h4>حالة الصالون</h4>
+                    <h3 id="toggleLabel">جاري التحميل...</h3>
+                </div>
+            </div>
+            <button class="toggle-btn" id="toggleBtn" onclick="toggleStatus()"></button>
+        </div>
+
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
@@ -117,8 +155,9 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhvc2tqdXpreHJtenVhcm9ib2ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NTI0OTQsImV4cCI6MjA5NjMyODQ5NH0.djwG-Oybxf3rKyxvLlrClAMkdjyMw-_vTMyGJmOO-30';
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let knownIds = new Set(); // ✅ نتابع الحجوزات المعروفة
+        let knownIds = new Set();
         let firstLoad = true;
+        let currentIsOpen = true; // حالة الصالون الحالية
 
         function updateClock() {
             const now = new Date();
@@ -127,11 +166,48 @@
         updateClock();
         setInterval(updateClock, 1000);
 
-        // ✅ صوت تنبيه للإدارة - صوت جرس قوي مميز
+        // ✅ تحديث واجهة زر المفتوح/المغلق
+        function renderToggle(isOpen) {
+            currentIsOpen = isOpen;
+            const icon  = document.getElementById('toggleIcon');
+            const label = document.getElementById('toggleLabel');
+            const btn   = document.getElementById('toggleBtn');
+
+            if (isOpen) {
+                icon.className  = 'toggle-icon open';
+                icon.innerHTML  = '<i class="fa-solid fa-door-open"></i>';
+                label.className = 'open';
+                label.innerText = 'مفتوح الآن';
+                btn.className   = 'toggle-btn open';
+            } else {
+                icon.className  = 'toggle-icon closed';
+                icon.innerHTML  = '<i class="fa-solid fa-door-closed"></i>';
+                label.className = 'closed';
+                label.innerText = 'مغلق الآن';
+                btn.className   = 'toggle-btn closed';
+            }
+        }
+
+        // ✅ جلب حالة الصالون
+        async function fetchStatus() {
+            const { data, error } = await db.from('salon_status').select('is_open').eq('id', 1).single();
+            if (!error && data) renderToggle(data.is_open);
+        }
+
+        // ✅ تبديل الحالة
+        async function toggleStatus() {
+            const newStatus = !currentIsOpen;
+            renderToggle(newStatus); // تحديث فوري بدون انتظار
+            const { error } = await db.from('salon_status').update({ is_open: newStatus }).eq('id', 1);
+            if (error) {
+                alert('خطأ: ' + error.message);
+                renderToggle(!newStatus); // ارجع للحالة القديمة إذا فشل
+            }
+        }
+
         function playNewBookingSound() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                // صوت جرس متكرر مختلف عن صوت الزبون
                 const pattern = [
                     { freq: 880, start: 0.0, dur: 0.15 },
                     { freq: 880, start: 0.2, dur: 0.15 },
@@ -140,16 +216,13 @@
                 pattern.forEach(n => {
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.type = 'square';
-                    osc.frequency.value = n.freq;
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.type = 'square'; osc.frequency.value = n.freq;
                     const s = ctx.currentTime + n.start;
                     gain.gain.setValueAtTime(0, s);
                     gain.gain.linearRampToValueAtTime(0.3, s + 0.02);
                     gain.gain.exponentialRampToValueAtTime(0.001, s + n.dur);
-                    osc.start(s);
-                    osc.stop(s + n.dur);
+                    osc.start(s); osc.stop(s + n.dur);
                 });
             } catch(e) {}
         }
@@ -157,6 +230,7 @@
         function showNewBanner() {
             const b = document.getElementById('newBanner');
             b.style.display = 'block';
+            b.style.animation = 'bannerPop 0.4s ease';
             setTimeout(() => { b.style.display = 'none'; }, 3000);
         }
 
@@ -167,22 +241,16 @@
                 .in('status', ['pending', 'approved'])
                 .order('id', { ascending: true });
 
-            if (error) { console.error('خطأ:', error); return; }
+            if (error) return;
 
             const listDiv = document.getElementById('queueList');
             let pending = 0, approved = 0;
             const currentIds = new Set((data || []).map(c => c.id));
 
-            // ✅ كشف زبون جديد
             if (!firstLoad) {
                 let hasNew = false;
-                currentIds.forEach(id => {
-                    if (!knownIds.has(id)) hasNew = true;
-                });
-                if (hasNew) {
-                    playNewBookingSound();
-                    showNewBanner();
-                }
+                currentIds.forEach(id => { if (!knownIds.has(id)) hasNew = true; });
+                if (hasNew) { playNewBookingSound(); showNewBanner(); }
             }
             knownIds = currentIds;
             firstLoad = false;
@@ -244,8 +312,11 @@
             fetchQueue();
         }
 
+        // ✅ جلب الحالة والقائمة عند التحميل
+        fetchStatus();
         fetchQueue();
         setInterval(fetchQueue, 3000);
+        setInterval(fetchStatus, 5000); // تحديث حالة الصالون كل 5 ثواني
     </script>
 </body>
 </html>
