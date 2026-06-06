@@ -9,50 +9,29 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg: #0f1115;
-            --card: #1a1d24;
-            --gold: #d4af37;
-            --gold-hover: #b5952f;
-            --muted: #8b8d93;
-            --success: #28a745;
-            --danger: #dc3545;
+            --bg: #0f1115; --card: #1a1d24; --gold: #d4af37;
+            --gold-hover: #b5952f; --muted: #8b8d93;
+            --success: #28a745; --danger: #dc3545;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: #fff; min-height: 100vh; padding-bottom: 30px; }
 
         .top-navbar {
-            background: var(--card);
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: var(--card); padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid rgba(255,255,255,0.05);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         .logo-area { display: flex; align-items: center; gap: 10px; }
         .logo-area i { font-size: 24px; color: var(--gold); }
         .logo-area h2 { font-size: 18px; font-weight: 800; }
         .logo-area span { color: var(--gold); }
-        .clock-area {
-            font-size: 14px; font-weight: 700; color: var(--gold);
-            background: rgba(212,175,55,0.1); padding: 5px 10px; border-radius: 8px;
-        }
+        .clock-area { font-size: 14px; font-weight: 700; color: var(--gold); background: rgba(212,175,55,0.1); padding: 5px 10px; border-radius: 8px; }
 
         .container { padding: 20px; }
-
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .stat-card {
-            background: var(--card); padding: 15px; border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.05); text-align: center;
-        }
-        .stat-icon {
-            width: 40px; height: 40px; margin: 0 auto 10px; border-radius: 10px;
-            background: rgba(212,175,55,0.1); color: var(--gold);
-            display: flex; align-items: center; justify-content: center; font-size: 18px;
-        }
+        .stat-card { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center; }
+        .stat-icon { width: 40px; height: 40px; margin: 0 auto 10px; border-radius: 10px; background: rgba(212,175,55,0.1); color: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 18px; }
         .stat-info h4 { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
         .stat-info h2 { font-size: 22px; font-weight: 800; }
 
@@ -65,7 +44,10 @@
             overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             animation: slideIn 0.4s ease;
         }
+        /* ✅ كارت جديد يومض مرة */
+        .customer-card.new-flash { animation: slideIn 0.4s ease, flashNew 1s ease; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes flashNew { 0%,100% { box-shadow: 0 4px 15px rgba(0,0,0,0.15); } 50% { box-shadow: 0 0 30px rgba(212,175,55,0.6); } }
 
         .card-status-bar { position: absolute; top: 0; right: 0; width: 4px; height: 100%; }
         .status-pending { background: var(--gold); }
@@ -73,36 +55,36 @@
 
         .customer-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
         .customer-info { display: flex; align-items: center; gap: 12px; }
-        .customer-avatar {
-            width: 45px; height: 45px; background: rgba(255,255,255,0.05);
-            border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; font-size: 18px; color: var(--muted);
-        }
+        .customer-avatar { width: 45px; height: 45px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--muted); }
         .customer-details h3 { font-size: 16px; margin-bottom: 4px; }
         .status-badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; white-space: nowrap; }
         .badge-pending { background: rgba(212,175,55,0.1); color: var(--gold); }
         .badge-approved { background: rgba(40,167,69,0.1); color: var(--success); }
 
-        .btn {
-            width: 100%; padding: 14px; border: none; border-radius: 10px;
-            font-weight: 700; font-size: 15px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            font-family: 'Cairo', sans-serif; transition: all 0.2s;
-        }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Cairo', sans-serif; transition: all 0.2s; }
         .btn-call { background: var(--gold); color: #000; }
         .btn-call:active { transform: scale(0.98); background: var(--gold-hover); }
         .btn-done { background: transparent; color: var(--success); border: 1px solid var(--success); }
         .btn-done:active { transform: scale(0.98); background: rgba(40,167,69,0.1); }
 
-        .empty-state {
-            text-align: center; padding: 40px 20px; color: var(--muted);
-            background: var(--card); border-radius: 15px;
-            border: 1px dashed rgba(255,255,255,0.1);
-        }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); background: var(--card); border-radius: 15px; border: 1px dashed rgba(255,255,255,0.1); }
         .empty-state i { font-size: 40px; margin-bottom: 15px; color: rgba(255,255,255,0.1); display: block; }
+
+        /* ✅ بانر تنبيه زبون جديد */
+        .new-banner {
+            display: none; position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, #d4af37, #f3cf55);
+            color: #000; font-size: 16px; font-weight: 800;
+            padding: 12px 25px; border-radius: 50px; z-index: 500;
+            box-shadow: 0 5px 25px rgba(212,175,55,0.5);
+            animation: bannerPop 0.4s ease;
+            white-space: nowrap;
+        }
+        @keyframes bannerPop { from { transform: translateX(-50%) scale(0.7); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
+
     <header class="top-navbar">
         <div class="logo-area">
             <i class="fa-solid fa-scissors"></i>
@@ -110,6 +92,9 @@
         </div>
         <div class="clock-area" id="clock">00:00</div>
     </header>
+
+    <!-- بانر زبون جديد -->
+    <div class="new-banner" id="newBanner">🔔 زبون جديد حجز!</div>
 
     <div class="container">
         <div class="stats-grid">
@@ -128,18 +113,52 @@
     </div>
 
     <script>
-        // ✅ الإعداد الصحيح مع URL الصحيح
         const SUPABASE_URL = 'https://hoskjuzkxrmzuarobofp.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhvc2tqdXpreHJtenVhcm9ib2ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NTI0OTQsImV4cCI6MjA5NjMyODQ5NH0.djwG-Oybxf3rKyxvLlrClAMkdjyMw-_vTMyGJmOO-30';
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // الساعة
+        let knownIds = new Set(); // ✅ نتابع الحجوزات المعروفة
+        let firstLoad = true;
+
         function updateClock() {
             const now = new Date();
             document.getElementById('clock').innerText = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
         }
         updateClock();
         setInterval(updateClock, 1000);
+
+        // ✅ صوت تنبيه للإدارة - صوت جرس قوي مميز
+        function playNewBookingSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                // صوت جرس متكرر مختلف عن صوت الزبون
+                const pattern = [
+                    { freq: 880, start: 0.0, dur: 0.15 },
+                    { freq: 880, start: 0.2, dur: 0.15 },
+                    { freq: 1100, start: 0.4, dur: 0.3 },
+                ];
+                pattern.forEach(n => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'square';
+                    osc.frequency.value = n.freq;
+                    const s = ctx.currentTime + n.start;
+                    gain.gain.setValueAtTime(0, s);
+                    gain.gain.linearRampToValueAtTime(0.3, s + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, s + n.dur);
+                    osc.start(s);
+                    osc.stop(s + n.dur);
+                });
+            } catch(e) {}
+        }
+
+        function showNewBanner() {
+            const b = document.getElementById('newBanner');
+            b.style.display = 'block';
+            setTimeout(() => { b.style.display = 'none'; }, 3000);
+        }
 
         async function fetchQueue() {
             const { data, error } = await db
@@ -151,9 +170,24 @@
             if (error) { console.error('خطأ:', error); return; }
 
             const listDiv = document.getElementById('queueList');
-            listDiv.innerHTML = '';
-
             let pending = 0, approved = 0;
+            const currentIds = new Set((data || []).map(c => c.id));
+
+            // ✅ كشف زبون جديد
+            if (!firstLoad) {
+                let hasNew = false;
+                currentIds.forEach(id => {
+                    if (!knownIds.has(id)) hasNew = true;
+                });
+                if (hasNew) {
+                    playNewBookingSound();
+                    showNewBanner();
+                }
+            }
+            knownIds = currentIds;
+            firstLoad = false;
+
+            listDiv.innerHTML = '';
 
             if (!data || data.length === 0) {
                 listDiv.innerHTML = `
@@ -166,7 +200,6 @@
                 data.forEach(c => {
                     if (c.status === 'pending') pending++;
                     if (c.status === 'approved') approved++;
-
                     const isPending = c.status === 'pending';
                     const card = document.createElement('div');
                     card.className = 'customer-card';
@@ -196,8 +229,7 @@
                                         <i class="fa-solid fa-check-double"></i> إنهاء الخدمة
                                    </button>`
                             }
-                        </div>
-                    `;
+                        </div>`;
                     listDiv.appendChild(card);
                 });
             }
@@ -207,11 +239,7 @@
         }
 
         async function updateStatus(id, newStatus) {
-            const { error } = await db
-                .from('appointments')
-                .update({ status: newStatus })
-                .eq('id', id);
-
+            const { error } = await db.from('appointments').update({ status: newStatus }).eq('id', id);
             if (error) { alert('خطأ: ' + error.message); return; }
             fetchQueue();
         }
