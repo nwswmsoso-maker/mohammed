@@ -2,13 +2,12 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة القيادة | صالون محمد عدنان</title>
-    <!-- استدعاء خط Cairo الفخم -->
+    <!-- منع التقريب التلقائي ليكون مثل التطبيق الحقيقي -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>إدارة صالون محمد عدنان</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <!-- استدعاء الأيقونات -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- استدعاء مكتبة Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -28,217 +27,196 @@
             padding: 0;
             box-sizing: border-box;
             font-family: 'Cairo', sans-serif;
+            -webkit-tap-highlight-color: transparent; /* إزالة مربع اللمس الأزرق المزعج في الموبايل */
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
             min-height: 100vh;
-            display: flex;
+            padding-bottom: 30px;
         }
 
-        /* الشريط الجانبي (Sidebar) */
-        .sidebar {
-            width: 280px;
+        /* شريط التنقل العلوي للموبايل */
+        .top-navbar {
             background-color: var(--card-bg);
-            padding: 30px 20px;
-            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 15px 20px;
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
         .logo-area {
-            text-align: center;
-            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .logo-area i {
-            font-size: 40px;
+            font-size: 24px;
             color: var(--primary-gold);
-            margin-bottom: 10px;
         }
 
         .logo-area h2 {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 800;
-            letter-spacing: 1px;
         }
 
         .logo-area span {
             color: var(--primary-gold);
         }
 
-        .nav-items {
-            list-style: none;
-        }
-
-        .nav-items li {
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            background-color: rgba(212, 175, 55, 0.1);
-            color: var(--primary-gold);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        /* المحتوى الرئيسي (Main Content) */
-        .main-content {
-            flex: 1;
-            padding: 40px;
-            overflow-y: auto;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
-        }
-
-        .header h1 {
-            font-size: 28px;
+        .clock-area {
+            font-size: 14px;
             font-weight: 700;
+            color: var(--primary-gold);
+            background: rgba(212, 175, 55, 0.1);
+            padding: 5px 10px;
+            border-radius: 8px;
         }
 
-        /* الإحصائيات السريعة */
+        /* الحاوية الرئيسية */
+        .container {
+            padding: 20px;
+        }
+
+        /* شبكة الإحصائيات - بطاقتين بجانب بعض للموبايل */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
         }
 
         .stat-card {
             background-color: var(--card-bg);
-            padding: 25px;
+            padding: 15px;
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.05);
-            display: flex;
-            align-items: center;
-            gap: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         .stat-icon {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 10px;
             border-radius: 10px;
             background-color: rgba(212, 175, 55, 0.1);
             color: var(--primary-gold);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 18px;
         }
 
         .stat-info h4 {
             color: var(--text-muted);
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 600;
+            margin-bottom: 5px;
         }
 
         .stat-info h2 {
-            font-size: 24px;
-            margin-top: 5px;
+            font-size: 22px;
+            font-weight: 800;
         }
 
-        /* شبكة الحجوزات (Queue Grid) */
+        /* قسم الحجوزات */
         .section-title {
-            font-size: 20px;
-            margin-bottom: 20px;
+            font-size: 18px;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            color: var(--text-main);
         }
 
         .queue-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
 
         .customer-card {
             background-color: var(--card-bg);
             border-radius: 15px;
-            padding: 25px;
+            padding: 20px;
             border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         }
 
-        .customer-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(212, 175, 55, 0.3);
-        }
-
-        /* شريط الحالة الملون في أعلى البطاقة */
         .card-status-bar {
             position: absolute;
             top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
+            right: 0;
+            width: 4px;
+            height: 100%;
         }
         .status-pending { background-color: var(--primary-gold); }
         .status-approved { background-color: var(--success); }
 
+        .customer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
         .customer-info {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 12px;
         }
 
         .customer-avatar {
-            width: 50px;
-            height: 50px;
-            background-color: #2a2e39;
+            width: 45px;
+            height: 45px;
+            background-color: rgba(255,255,255,0.05);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 18px;
             color: var(--text-muted);
         }
 
         .customer-details h3 {
-            font-size: 18px;
-            margin-bottom: 3px;
+            font-size: 16px;
+            margin-bottom: 4px;
         }
 
         .service-tag {
             display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            background-color: rgba(255,255,255,0.05);
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
-            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .card-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding-top: 20px;
+        .status-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 700;
         }
+        .badge-pending { background-color: rgba(212, 175, 55, 0.1); color: var(--primary-gold); }
+        .badge-approved { background-color: rgba(40, 167, 69, 0.1); color: var(--success); }
 
         .btn {
-            flex: 1;
-            padding: 10px;
+            width: 100%;
+            padding: 14px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 15px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -250,71 +228,63 @@
             color: #000;
         }
 
-        .btn-call:hover {
+        .btn-call:active {
+            transform: scale(0.98);
             background-color: var(--primary-gold-hover);
         }
 
         .btn-done {
-            background-color: rgba(40, 167, 69, 0.1);
+            background-color: transparent;
             color: var(--success);
             border: 1px solid var(--success);
         }
 
-        .btn-done:hover {
-            background-color: var(--success);
-            color: #fff;
+        .btn-done:active {
+            transform: scale(0.98);
+            background-color: rgba(40, 167, 69, 0.1);
         }
 
         .empty-state {
-            grid-column: 1 / -1;
             text-align: center;
-            padding: 50px;
+            padding: 40px 20px;
             color: var(--text-muted);
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            border: 1px dashed rgba(255,255,255,0.1);
         }
+        
         .empty-state i {
-            font-size: 50px;
+            font-size: 40px;
             margin-bottom: 15px;
-            opacity: 0.5;
+            color: rgba(255,255,255,0.1);
         }
     </style>
 </head>
 <body>
 
-    <!-- الشريط الجانبي -->
-    <aside class="sidebar">
+    <!-- الشريط العلوي (بديل القائمة الجانبية) -->
+    <header class="top-navbar">
         <div class="logo-area">
             <i class="fa-solid fa-scissors"></i>
             <h2>صالون <span>محمد عدنان</span></h2>
         </div>
-        <ul class="nav-items">
-            <li><i class="fa-solid fa-list-ul"></i> قائمة الحجوزات</li>
-            <!-- يمكن إضافة المزيد من الأقسام مستقبلاً هنا مثل الإعدادات وغيرها -->
-        </ul>
-    </aside>
+        <div class="clock-area" id="clock">00:00</div>
+    </header>
 
-    <!-- المحتوى الرئيسي -->
-    <main class="main-content">
-        <div class="header">
-            <div>
-                <h1>لوحة التحكم</h1>
-                <p style="color: var(--text-muted); margin-top: 5px;">إدارة حجوزات الزبائن لحظة بلحظة</p>
-            </div>
-            <div id="clock" style="font-size: 18px; font-weight: bold; color: var(--primary-gold);"></div>
-        </div>
-
-        <!-- الإحصائيات -->
+    <div class="container">
+        <!-- الإحصائيات (تظهر كبطاقات صغيرة بجانب بعضها) -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
                 <div class="stat-info">
-                    <h4>في قاعة الانتظار</h4>
+                    <h4>في الانتظار</h4>
                     <h2 id="pendingCount">0</h2>
                 </div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon"><i class="fa-solid fa-chair"></i></div>
                 <div class="stat-info">
-                    <h4>على كرسي الحلاقة</h4>
+                    <h4>على الكرسي</h4>
                     <h2 id="approvedCount">0</h2>
                 </div>
             </div>
@@ -323,9 +293,9 @@
         <!-- قائمة الحجوزات -->
         <h3 class="section-title"><i class="fa-regular fa-clock"></i> الزبائن الحاليين</h3>
         <div class="queue-grid" id="queueList">
-            <!-- سيتم إضافة البطاقات هنا عن طريق الجافاسكريبت -->
+            <!-- البطاقات ستظهر هنا -->
         </div>
-    </main>
+    </div>
 
     <script>
         // إعداد Supabase (ضع مفتاحك هنا)
@@ -333,13 +303,13 @@
         const SUPABASE_KEY = 'ضع_مفتاحك_هنا'; 
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // ساعة رقمية في الأعلى
+        // تحديث الساعة
         setInterval(() => {
-            document.getElementById('clock').innerText = new Date().toLocaleTimeString('ar-IQ');
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
         }, 1000);
 
         async function fetchQueue() {
-            // جلب البيانات مع ربطها بجدول الخدمات (LOS) لمعرفة اسم الخدمة
             const { data, error } = await supabase
                 .from('appointments')
                 .select('*, services(service_name)') 
@@ -347,7 +317,7 @@
                 .order('created_at', { ascending: true });
 
             if (error) {
-                console.error("خطأ في جلب البيانات:", error);
+                console.error("خطأ:", error);
                 return;
             }
 
@@ -361,45 +331,45 @@
                 listDiv.innerHTML = `
                     <div class="empty-state">
                         <i class="fa-solid fa-mug-hot"></i>
-                        <h3>لا يوجد زبائن في الانتظار حالياً</h3>
-                        <p>استرح وتناول كوباً من القهوة!</p>
+                        <h3>لا يوجد زبائن حالياً</h3>
+                        <p style="font-size: 13px; margin-top: 5px;">شارك رابط الحجز مع زبائنك!</p>
                     </div>`;
             } else {
                 data.forEach(customer => {
-                    // حساب الإحصائيات
                     if(customer.status === 'pending') pending++;
                     if(customer.status === 'approved') approved++;
 
-                    // إذا لم يكن هناك خدمة محددة، نعرض "غير محدد"
-                    const serviceName = customer.services ? customer.services.service_name : 'خدمة عامة';
+                    const serviceName = customer.services ? customer.services.service_name : 'غير محدد';
                     const isPending = customer.status === 'pending';
 
-                    // إنشاء بطاقة الزبون
                     const card = document.createElement('div');
                     card.className = 'customer-card';
                     card.innerHTML = `
                         <div class="card-status-bar ${isPending ? 'status-pending' : 'status-approved'}"></div>
-                        <div class="customer-info">
-                            <div class="customer-avatar">
-                                <i class="fa-solid fa-user"></i>
+                        
+                        <div class="customer-header">
+                            <div class="customer-info">
+                                <div class="customer-avatar">
+                                    <i class="fa-solid fa-user"></i>
+                                </div>
+                                <div class="customer-details">
+                                    <h3>${customer.customer_name}</h3>
+                                    <span class="service-tag"><i class="fa-solid fa-scissors"></i> الخدمة: ${serviceName}</span>
+                                </div>
                             </div>
-                            <div class="customer-details">
-                                <h3>${customer.customer_name}</h3>
-                                <span class="service-tag"><i class="fa-solid fa-scissors"></i> ${serviceName}</span>
-                            </div>
-                        </div>
-                        <div style="font-size: 13px; color: var(--text-muted);">
-                            <i class="fa-solid fa-circle-info"></i> الحالة: ${isPending ? '<span style="color:#d4af37">ينتظر دوره</span>' : '<span style="color:#28a745">يحلق الآن</span>'}
+                            <span class="status-badge ${isPending ? 'badge-pending' : 'badge-approved'}">
+                                ${isPending ? 'ينتظر' : 'يحلق الآن'}
+                            </span>
                         </div>
                         
-                        <div class="card-actions">
+                        <div style="margin-top: 15px;">
                             ${isPending ? 
                                 `<button class="btn btn-call" onclick="updateStatus(${customer.id}, 'approved')">
                                     <i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي
                                 </button>` 
                                 : 
                                 `<button class="btn btn-done" onclick="updateStatus(${customer.id}, 'completed')">
-                                    <i class="fa-solid fa-check-double"></i> إنهاء الدفع وإخفاء
+                                    <i class="fa-solid fa-check-double"></i> إنهاء الخدمة وإخفاء
                                 </button>`
                             }
                         </div>
@@ -408,7 +378,6 @@
                 });
             }
 
-            // تحديث الإحصائيات في الأعلى
             document.getElementById('pendingCount').innerText = pending;
             document.getElementById('approvedCount').innerText = approved;
         }
@@ -419,10 +388,9 @@
                 .update({ status: newStatus })
                 .eq('id', id);
             
-            fetchQueue(); // تحديث القائمة فوراً
+            fetchQueue(); 
         }
 
-        // تحديث البيانات أول مرة، ثم كل 3 ثواني لتكون سريعة جداً مثل "الريال تايم"
         fetchQueue();
         setInterval(fetchQueue, 3000);
     </script>
