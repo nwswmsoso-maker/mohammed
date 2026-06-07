@@ -251,8 +251,23 @@
         let cachedPending = [];
 
         /* ══════════════════════════════
-           ── نظام الإشعارات ──
+           ── Service Worker + الإشعارات ──
         ══════════════════════════════ */
+        let swRegistration = null;
+
+        async function registerSW() {
+            if (!('serviceWorker' in navigator)) return;
+            try {
+                swRegistration = await navigator.serviceWorker.register('sw.js');
+                // نبعث رسالة كل 10 ثواني يبقى الـ SW شغال
+                setInterval(() => {
+                    if (swRegistration && swRegistration.active) {
+                        swRegistration.active.postMessage({ type: 'KEEP_ALIVE' });
+                    }
+                }, 10000);
+            } catch(e) { console.warn('SW error:', e); }
+        }
+
         function checkNotifStatus() {
             const bar = document.getElementById('notifBar');
             const btn = document.getElementById('notifBtn');
@@ -263,7 +278,7 @@
             }
             if (Notification.permission === 'granted') {
                 bar.className = 'notif-bar notif-granted';
-                txt.innerHTML = '<i class="fas fa-check-circle"></i> الإشعارات مفعّلة ✅';
+                txt.innerHTML = '<i class="fas fa-check-circle"></i> الإشعارات مفعّلة — تصلك حتى لو الشاشة مقفلة ✅';
                 btn.style.display = 'none';
             } else if (Notification.permission === 'denied') {
                 bar.classList.add('hidden');
@@ -276,28 +291,43 @@
             const permission = await Notification.requestPermission();
             checkNotifStatus();
             if (permission === 'granted') {
-                // إشعار تجريبي للتأكيد
-                new Notification('✅ تم تفعيل الإشعارات', {
-                    body: 'ستصلك تنبيهات عند كل حجز جديد',
-                    icon: 'cover.jpg',
-                    badge: 'cover.jpg'
-                });
+                await registerSW();
+                // إشعار تجريبي
+                if (swRegistration) {
+                    swRegistration.showNotification('✅ تم تفعيل الإشعارات', {
+                        body: 'ستصلك تنبيهات حتى لو الشاشة مقفلة',
+                        icon: 'cover.jpg',
+                        vibrate: [200, 100, 200]
+                    });
+                }
             }
         }
 
         function sendBookingNotification(customerName) {
             if (Notification.permission !== 'granted') return;
-            // صوت قوي عبر الإشعار
-            const notif = new Notification('🔔 زبون جديد حجز!', {
-                body: 'الاسم: ' + customerName + '\nاضغط لفتح اللوحة',
-                icon: 'cover.jpg',
-                badge: 'cover.jpg',
-                vibrate: [300, 100, 300, 100, 300],
-                requireInteraction: true,   // يبقى الإشعار حتى تضغط عليه
-                tag: 'new-booking',
-                renotify: true
-            });
-            notif.onclick = () => { window.focus(); notif.close(); };
+            // عبر Service Worker — يشتغل حتى لو الشاشة مقفلة
+            if (swRegistration) {
+                swRegistration.showNotification('🔔 زبون جديد حجز!', {
+                    body: 'الاسم: ' + customerName,
+                    icon: 'cover.jpg',
+                    badge: 'cover.jpg',
+                    vibrate: [400, 100, 400, 100, 400, 100, 400],
+                    requireInteraction: true,
+                    tag: 'new-booking',
+                    renotify: true,
+                    data: { url: './admin.html' }
+                });
+            } else {
+                // fallback
+                const notif = new Notification('🔔 زبون جديد حجز!', {
+                    body: 'الاسم: ' + customerName,
+                    icon: 'cover.jpg',
+                    requireInteraction: true,
+                    tag: 'new-booking',
+                    renotify: true
+                });
+                notif.onclick = () => { window.focus(); notif.close(); };
+            }
         }
 
         /* ══════════════════════════════
@@ -532,6 +562,7 @@
         }
 
         // تهيئة
+        registerSW();
         checkNotifStatus();
         fetchStatus();
         fetchQueue();
