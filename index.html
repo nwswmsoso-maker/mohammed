@@ -37,9 +37,8 @@
 
         .container { padding: 20px; }
 
-        /* زر تفعيل الإشعارات */
         .notif-bar {
-            display: none; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.3);
+            background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.3);
             border-radius: 14px; padding: 12px 16px; margin-bottom: 16px;
             display: flex; align-items: center; justify-content: space-between; gap: 10px;
         }
@@ -171,8 +170,6 @@
         .qr-time { font-size: 11px; color: var(--muted); flex-shrink: 0; }
         .drawer-empty { text-align: center; padding: 40px 20px; color: var(--muted); }
         .drawer-empty i { font-size: 36px; display: block; margin-bottom: 12px; opacity: 0.3; }
-
-        .phone-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
         .qr-phone { color: var(--muted); text-decoration: none; }
         .qr-phone:hover { color: var(--gold); }
     </style>
@@ -191,7 +188,6 @@
 
     <div class="container">
 
-        <!-- شريط الإشعارات -->
         <div class="notif-bar" id="notifBar">
             <div class="notif-bar-text">
                 <i class="fas fa-bell"></i>
@@ -245,13 +241,14 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhvc2tqdXpreHJtenVhcm9ib2ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NTI0OTQsImV4cCI6MjA5NjMyODQ5NH0.djwG-Oybxf3rKyxvLlrClAMkdjyMw-_vTMyGJmOO-30';
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-
-
-        /* ══════════════════════════════
-           ── Service Worker + الإشعارات ──
-        ══════════════════════════════ */
+        // ══ المتغيرات العامة ══
+        let currentIsOpen = false;
+        let knownIds = new Set();
+        let firstFetchDone = false;
+        let cachedPending = [];
         let swRegistration = null;
 
+        /* ══ Service Worker + الإشعارات ══ */
         async function registerSW() {
             if (!('serviceWorker' in navigator)) return;
             try {
@@ -322,26 +319,19 @@
             }
         }
 
-        /* ══════════════════════════════
-           ── صوت التنبيه ──
-        ══════════════════════════════ */
+        /* ══ صوت التنبيه ══ */
         function playNewBookingSound() {
             try {
-                // تشغيل ملف mhma.mp3 من GitHub
                 const audio = new Audio('mhma.mp3');
                 audio.volume = 1.0;
                 audio.play().catch(e => console.warn('Audio play blocked:', e));
-                
-                // اهتزاز قوي
                 if (navigator.vibrate) {
                     navigator.vibrate([400, 100, 400, 100, 400, 100, 400]);
                 }
             } catch(e) { console.warn('Sound error:', e); }
         }
 
-        /* ══════════════════════════════
-           ── ساعة ──
-        ══════════════════════════════ */
+        /* ══ الساعة ══ */
         function updateClock() {
             const now = new Date();
             document.getElementById('clock').innerText =
@@ -350,9 +340,7 @@
         updateClock();
         setInterval(updateClock, 1000);
 
-        /* ══════════════════════════════
-           ── Toggle ──
-        ══════════════════════════════ */
+        /* ══ Toggle الصالون ══ */
         function renderToggle(isOpen) {
             currentIsOpen = isOpen;
             const icon  = document.getElementById('toggleIcon');
@@ -370,29 +358,33 @@
                 btn.className   = 'toggle-btn closed';
             }
         }
+
         async function fetchStatus() {
-            const { data, error } = await db.from('salon_status').select('is_open').eq('id', 1).single();
-            if (!error && data) renderToggle(data.is_open);
+            try {
+                const { data, error } = await db.from('salon_status').select('is_open').eq('id', 1).single();
+                if (!error && data) renderToggle(data.is_open);
+            } catch(e) { console.warn('fetchStatus error:', e); }
         }
+
         async function toggleStatus() {
             const newStatus = !currentIsOpen;
             renderToggle(newStatus);
-            const { error } = await db.from('salon_status').update({ is_open: newStatus }).eq('id', 1);
-            if (error) { alert('خطأ: ' + error.message); renderToggle(!newStatus); }
+            try {
+                const { error } = await db.from('salon_status').update({ is_open: newStatus }).eq('id', 1);
+                if (error) { alert('خطأ: ' + error.message); renderToggle(!newStatus); }
+            } catch(e) { alert('خطأ في الاتصال'); renderToggle(!newStatus); }
         }
 
-        /* ══════════════════════════════
-           ── Banner ──
-        ══════════════════════════════ */
+        /* ══ Banner ══ */
         function showNewBanner() {
             const b = document.getElementById('newBanner');
-            b.style.display = 'block'; b.style.animation = 'bannerPop 0.4s ease';
+            b.style.display = 'block';
+            b.style.animation = 'none';
+            setTimeout(() => { b.style.animation = 'bannerPop 0.4s ease'; }, 10);
             setTimeout(() => { b.style.display = 'none'; }, 4000);
         }
 
-        /* ══════════════════════════════
-           ── Drawer ──
-        ══════════════════════════════ */
+        /* ══ Drawer ══ */
         function openDrawer() {
             renderDrawer();
             document.getElementById('drawerOverlay').classList.add('show');
@@ -419,7 +411,7 @@
                     '<div class="qr-info">' +
                         '<h4>' + c.customer_name + (isFirst ? ' <span style="font-size:11px;color:var(--gold);">← التالي</span>' : '') + '</h4>' +
                         (c.phone
-                            ? '<a class="qr-phone" href="tel:' + c.phone + '"><i class="fas fa-phone-alt"></i>' + c.phone + '</a>'
+                            ? '<a class="qr-phone" href="tel:' + c.phone + '"><i class="fas fa-phone-alt"></i> ' + c.phone + '</a>'
                             : '<span class="qr-phone">لا يوجد رقم</span>') +
                     '</div>' +
                     '<div class="qr-time">' + timeStr + '</div>';
@@ -427,103 +419,107 @@
             });
         }
 
-        /* ══════════════════════════════
-           ── Queue ──
-        ══════════════════════════════ */
+        /* ══ Queue الرئيسي ══ */
         async function fetchQueue() {
-            const { data, error } = await db
-                .from('appointments')
-                .select('*')
-                .in('status', ['pending', 'approved'])
-                .order('id', { ascending: true });
+            try {
+                const { data, error } = await db
+                    .from('appointments')
+                    .select('*')
+                    .in('status', ['pending', 'approved'])
+                    .order('id', { ascending: true });
 
-            if (error) return;
-
-            const currentIds = new Set((data || []).map(c => c.id));
-
-            if (firstFetchDone) {
-                let newCustomers = [];
-                currentIds.forEach(id => {
-                    if (!knownIds.has(id)) {
-                        const c = (data || []).find(x => x.id === id);
-                        if (c && c.status === 'pending') newCustomers.push(c);
-                    }
-                });
-                if (newCustomers.length > 0) {
-                    playNewBookingSound();
-                    showNewBanner();
-                    newCustomers.forEach(c => sendBookingNotification(c.customer_name));
+                if (error) {
+                    console.error('fetchQueue error:', error);
+                    return;
                 }
-            }
 
-            knownIds = currentIds;
-            firstLoad = false;
-            firstFetchDone = true;
+                const rows = data || [];
+                const currentIds = new Set(rows.map(c => c.id));
 
-            cachedPending = (data || []).filter(c => c.status === 'pending');
-            const approved = (data || []).filter(c => c.status === 'approved');
-            const sorted   = [...approved, ...cachedPending];
+                // كشف الزبائن الجدد
+                if (firstFetchDone) {
+                    const newCustomers = rows.filter(c => !knownIds.has(c.id) && c.status === 'pending');
+                    if (newCustomers.length > 0) {
+                        playNewBookingSound();
+                        showNewBanner();
+                        newCustomers.forEach(c => sendBookingNotification(c.customer_name));
+                    }
+                }
 
-            document.getElementById('pendingCount').innerText  = cachedPending.length;
-            document.getElementById('approvedCount').innerText = approved.length;
+                knownIds = currentIds;
+                firstFetchDone = true;
 
-            if (document.getElementById('drawer').classList.contains('open')) renderDrawer();
+                cachedPending = rows.filter(c => c.status === 'pending');
+                const approved = rows.filter(c => c.status === 'approved');
+                const sorted   = [...approved, ...cachedPending];
 
-            const listDiv = document.getElementById('queueList');
-            listDiv.innerHTML = '';
+                document.getElementById('pendingCount').innerText  = cachedPending.length;
+                document.getElementById('approvedCount').innerText = approved.length;
 
-            if (sorted.length === 0) {
-                listDiv.innerHTML =
-                    '<div class="empty-state">' +
-                    '<i class="fa-solid fa-mug-hot"></i>' +
-                    '<h3>لا يوجد زبائن حالياً</h3>' +
-                    '<p style="font-size:13px;margin-top:5px;">شارك رابط الحجز مع زبائنك!</p>' +
-                    '</div>';
-                return;
-            }
+                if (document.getElementById('drawer').classList.contains('open')) renderDrawer();
 
-            sorted.forEach((c, index) => {
-                const isPending = c.status === 'pending';
-                const isFirst   = index === 0 && isPending;
-                const timeStr   = new Date(c.created_at).toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
-                const phoneHtml = c.phone
-                    ? '<a class="phone-btn" href="tel:' + c.phone + '"><i class="fas fa-phone-alt"></i>' + c.phone + '</a>'
-                    : '<span class="no-phone">لا يوجد رقم</span>';
+                const listDiv = document.getElementById('queueList');
+                listDiv.innerHTML = '';
 
-                const card = document.createElement('div');
-                card.className = 'customer-card' + (isFirst ? ' first-in-queue' : '');
-                card.innerHTML =
-                    '<div class="card-status-bar ' + (isPending ? 'status-pending' : 'status-approved') + '"></div>' +
-                    (isPending ? '<div class="turn-badge">' + (cachedPending.indexOf(c)+1) + '</div>' : '') +
-                    '<div class="customer-header">' +
-                        '<div class="customer-info">' +
-                            '<div class="customer-avatar"><i class="fa-solid fa-user"></i></div>' +
-                            '<div class="customer-details">' +
-                                '<h3>' + c.customer_name + '</h3>' +
-                                '<span style="font-size:11px;color:var(--muted);"><i class="fa-regular fa-clock"></i> ' + timeStr + '</span>' +
+                if (sorted.length === 0) {
+                    listDiv.innerHTML =
+                        '<div class="empty-state">' +
+                        '<i class="fa-solid fa-mug-hot"></i>' +
+                        '<h3>لا يوجد زبائن حالياً</h3>' +
+                        '<p style="font-size:13px;margin-top:5px;">شارك رابط الحجز مع زبائنك!</p>' +
+                        '</div>';
+                    return;
+                }
+
+                sorted.forEach((c, index) => {
+                    const isPending = c.status === 'pending';
+                    const pendingIndex = cachedPending.findIndex(x => x.id === c.id);
+                    const isFirst = isPending && pendingIndex === 0;
+                    const timeStr = new Date(c.created_at).toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+                    const phoneHtml = c.phone
+                        ? '<a class="phone-btn" href="tel:' + c.phone + '"><i class="fas fa-phone-alt"></i>' + c.phone + '</a>'
+                        : '<span class="no-phone">لا يوجد رقم</span>';
+
+                    const card = document.createElement('div');
+                    card.className = 'customer-card' + (isFirst ? ' first-in-queue' : '');
+                    card.innerHTML =
+                        '<div class="card-status-bar ' + (isPending ? 'status-pending' : 'status-approved') + '"></div>' +
+                        (isPending ? '<div class="turn-badge">' + (pendingIndex + 1) + '</div>' : '') +
+                        '<div class="customer-header">' +
+                            '<div class="customer-info">' +
+                                '<div class="customer-avatar"><i class="fa-solid fa-user"></i></div>' +
+                                '<div class="customer-details">' +
+                                    '<h3>' + c.customer_name + '</h3>' +
+                                    '<span style="font-size:11px;color:var(--muted);"><i class="fa-regular fa-clock"></i> ' + timeStr + '</span>' +
+                                '</div>' +
                             '</div>' +
+                            '<span class="status-badge ' + (isPending ? 'badge-pending' : 'badge-approved') + '">' +
+                                (isPending ? 'ينتظر' : '✂️ يحلق الآن') +
+                            '</span>' +
                         '</div>' +
-                        '<span class="status-badge ' + (isPending ? 'badge-pending' : 'badge-approved') + '">' +
-                            (isPending ? 'ينتظر' : '✂️ يحلق الآن') +
-                        '</span>' +
-                    '</div>' +
-                    '<div class="phone-row">' + phoneHtml + '</div>' +
-                    '<div>' +
-                        (isPending
-                            ? '<button class="btn btn-call" onclick="updateStatus(' + c.id + ',\'approved\')"><i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي</button>'
-                            : '<button class="btn btn-done" onclick="updateStatus(' + c.id + ',\'completed\')"><i class="fa-solid fa-check-double"></i> إنهاء الخدمة</button>') +
-                    '</div>';
-                listDiv.appendChild(card);
-            });
+                        '<div class="phone-row">' + phoneHtml + '</div>' +
+                        '<div>' +
+                            (isPending
+                                ? '<button class="btn btn-call" onclick="updateStatus(' + c.id + ',\'approved\')"><i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي</button>'
+                                : '<button class="btn btn-done" onclick="updateStatus(' + c.id + ',\'completed\')"><i class="fa-solid fa-check-double"></i> إنهاء الخدمة</button>') +
+                        '</div>';
+                    listDiv.appendChild(card);
+                });
+
+            } catch(e) {
+                console.error('fetchQueue exception:', e);
+            }
         }
 
         async function updateStatus(id, newStatus) {
-            const { error } = await db.from('appointments').update({ status: newStatus }).eq('id', id);
-            if (error) { alert('خطأ: ' + error.message); return; }
-            fetchQueue();
+            try {
+                const { error } = await db.from('appointments').update({ status: newStatus }).eq('id', id);
+                if (error) { alert('خطأ: ' + error.message); return; }
+                fetchQueue();
+            } catch(e) { alert('خطأ في الاتصال'); }
         }
 
-        // تهيئة
+        // ══ تهيئة ══
         registerSW();
         checkNotifStatus();
         fetchStatus();
