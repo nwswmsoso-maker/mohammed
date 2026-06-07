@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>إدارة صالون محمد عدنان</title>
 
-    <!-- 🔍 أكواد مخصصة لمحرك بحث جوجل حصراً لإظهار الغلاف بالبحث 🔍 -->
+    <link rel="icon" href="cover.jpg" type="image/jpeg" sizes="any">
+    <link rel="apple-touch-icon" href="cover.jpg">
+    <link rel="shortcut icon" href="cover.jpg" type="image/jpeg">
+
     <meta name="thumbnail" content="cover.jpg">
+    <meta itemprop="image" content="cover.jpg">
     
     <script type="application/ld+json">
     {
@@ -14,11 +18,13 @@
       "@type": "WebSite",
       "name": "صالون محمد عدنان",
       "description": "نظام إدارة الحجوزات والزبائن لصالون محمد عدنان",
-      "image": "cover.jpg"
+      "image": "cover.jpg",
+      "url": "رابط_موقعك_هنا_اذا_تحب_تضيفه"
     }
     </script>
-    <!-- ────────────────────────────────────────────────────────── -->
 
+    <meta property="og:title" content="إدارة صالون محمد عدنان">
+    <meta property="og:image" content="cover.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -210,7 +216,6 @@
             display: flex; flex-direction: column; gap: 12px;
         }
 
-        /* بطاقة مصغرة داخل الـ drawer */
         .queue-row {
             background: var(--card);
             border-radius: 14px;
@@ -269,7 +274,6 @@
         </div>
 
         <div class="stats-grid">
-            <!-- كارد الانتظار — قابل للضغط -->
             <div class="stat-card clickable" onclick="openDrawer()">
                 <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
                 <div class="stat-info">
@@ -278,7 +282,6 @@
                 </div>
                 <div class="tap-hint">اضغط لعرض القائمة ▼</div>
             </div>
-            <!-- كارد الكرسي — عادي -->
             <div class="stat-card">
                 <div class="stat-icon"><i class="fa-solid fa-chair"></i></div>
                 <div class="stat-info"><h4>على الكرسي</h4><h2 id="approvedCount">0</h2></div>
@@ -289,10 +292,8 @@
         <div class="queue-grid" id="queueList"></div>
     </div>
 
-    <!-- Drawer overlay -->
     <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 
-    <!-- Drawer -->
     <div class="drawer" id="drawer">
         <div class="drawer-handle" onclick="closeDrawer()"></div>
         <div class="drawer-header">
@@ -310,7 +311,7 @@
         let knownIds = new Set();
         let firstLoad = true;
         let currentIsOpen = true;
-        let cachedPending = []; // نحفظ المنتظرين للـ drawer
+        let cachedPending = [];
 
         function updateClock() {
             const now = new Date();
@@ -320,7 +321,6 @@
         updateClock();
         setInterval(updateClock, 1000);
 
-        /* ── Toggle ── */
         function renderToggle(isOpen) {
             currentIsOpen = isOpen;
             const icon  = document.getElementById('toggleIcon');
@@ -349,7 +349,6 @@
             if (error) { alert('خطأ: ' + error.message); renderToggle(!newStatus); }
         }
 
-        /* ── Sound ── */
         function playNewBookingSound() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -373,7 +372,6 @@
             setTimeout(() => { b.style.display = 'none'; }, 3000);
         }
 
-        /* ── Drawer ── */
         function openDrawer() {
             renderDrawer();
             document.getElementById('drawerOverlay').classList.add('show');
@@ -408,7 +406,6 @@
             });
         }
 
-        /* ── Main queue fetch ── */
         async function fetchQueue() {
             const { data, error } = await db
                 .from('appointments')
@@ -427,7 +424,6 @@
             knownIds = currentIds;
             firstLoad = false;
 
-            // فصل المنتظرين عن الكرسي
             cachedPending = (data || []).filter(c => c.status === 'pending');
             const approved  = (data || []).filter(c => c.status === 'approved');
             const sorted    = [...approved, ...cachedPending];
@@ -435,7 +431,6 @@
             document.getElementById('pendingCount').innerText  = cachedPending.length;
             document.getElementById('approvedCount').innerText = approved.length;
 
-            // إذا الـ drawer مفتوح نحدثه
             if (document.getElementById('drawer').classList.contains('open')) renderDrawer();
 
             const listDiv = document.getElementById('queueList');
@@ -497,16 +492,5 @@
         setInterval(fetchQueue,  3000);
         setInterval(fetchStatus, 5000);
     </script>
-
-    <!-- styles for phone inside cards (carried from previous) -->
-    <style>
-        .phone-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
-        .phone-btn { display: inline-flex; align-items: center; gap: 7px; background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.2); border-radius: 30px; padding: 6px 14px; color: #cbd5e0; text-decoration: none; font-size: 14px; font-weight: 700; direction: ltr; letter-spacing: 0.5px; transition: all 0.2s; }
-        .phone-btn i { color: var(--gold); font-size: 13px; }
-        .phone-btn:hover, .phone-btn:active { background: rgba(212,175,55,0.18); color: var(--gold); }
-        .no-phone { font-size: 12px; color: var(--muted); font-style: italic; }
-        .qr-phone { color: var(--muted); text-decoration: none; }
-        .qr-phone:hover { color: var(--gold); }
-    </style>
 </body>
 </html>
