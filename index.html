@@ -101,8 +101,6 @@
         .qr-time{font-size:11px;color:var(--muted);flex-shrink:0;}
         .drawer-empty{text-align:center;padding:40px 20px;color:var(--muted);}
         .drawer-empty i{font-size:36px;display:block;margin-bottom:12px;opacity:0.3;}
-        .status-indicator{position:fixed;bottom:20px;right:20px;width:12px;height:12px;border-radius:50%;background:#2ed573;box-shadow:0 0 10px rgba(46,213,115,0.5);z-index:50;}
-        .status-indicator.offline{background:#dc3545;box-shadow:0 0 10px rgba(220,53,69,0.5);}
     </style>
 </head>
 <body>
@@ -153,8 +151,6 @@
     <div class="queue-grid" id="queueList"></div>
 </div>
 
-<div class="status-indicator" id="statusIndicator"></div>
-
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
     <div class="drawer-handle" onclick="closeDrawer()"></div>
@@ -170,7 +166,6 @@ const SUPABASE_URL = 'https://hoskjuzkxrmzuarobofp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhvc2tqdXpreHJtenVhcm9ib2ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NTI0OTQsImV4cCI6MjA5NjMyODQ5NH0.djwG-Oybxf3rKyxvLlrClAMkdjyMw-_vTMyGJmOO-30';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ══ المتغيرات الكلية ══
 let currentIsOpen  = false;
 let knownIds       = new Set();
 let firstFetchDone = false;
@@ -178,50 +173,14 @@ let cachedPending  = [];
 let swReg          = null;
 let isFetching     = false;
 let bannerTimer    = null;
+let lastNotifId    = null;
 
-// ══ تحميل الحالة المحفوظة من localStorage ══
-function loadSavedState() {
-    try {
-        const saved = localStorage.getItem('salon-known-ids');
-        if (saved) {
-            knownIds = new Set(JSON.parse(saved));
-            firstFetchDone = true;
-            console.log('✅ تم استرجاع الحالة المحفوظة');
-        }
-    } catch(e) {
-        console.warn('خطأ في تحميل الحالة', e);
-    }
-}
-
-// ══ حفظ الحالة ══
-function saveSavedState() {
-    try {
-        localStorage.setItem('salon-known-ids', JSON.stringify([...knownIds]));
-    } catch(e) {
-        console.warn('خطأ في حفظ الحالة', e);
-    }
-}
-
-// ══ تحديث مؤشر الاتصال ══
-function setOnlineStatus(isOnline) {
-    const ind = document.getElementById('statusIndicator');
-    if (isOnline) {
-        ind.classList.remove('offline');
-        ind.title = 'متصل ✓';
-    } else {
-        ind.classList.add('offline');
-        ind.title = 'قطع الاتصال ✗';
-    }
-}
-
-// ══ Service Worker ══
 async function registerSW() {
     if (!('serviceWorker' in navigator)) return;
     try { swReg = await navigator.serviceWorker.register('sw.js'); }
     catch(e) { swReg = null; }
 }
 
-// ══ الإشعارات ══
 function checkNotifStatus() {
     const bar = document.getElementById('notifBar');
     const btn = document.getElementById('notifBtn');
@@ -245,7 +204,6 @@ async function requestNotifPermission() {
     }
 }
 
-// إشعار واحد فقط
 function fireNotif(title, body) {
     if (Notification.permission !== 'granted') return;
     const opts = { body, icon: 'cover.jpg', tag: 'salon-alert', renotify: true, requireInteraction: true, vibrate: [300,100,300] };
@@ -257,13 +215,11 @@ function fireNotif(title, body) {
     }
 }
 
-// ══ الصوت والاهتزاز ══
 function playSound() {
     try { new Audio('mhma.mp3').play().catch(()=>{}); } catch(e) {}
     if (navigator.vibrate) navigator.vibrate([400,100,400,100,400]);
 }
 
-// ══ البانر — مرة وحدة فقط ══
 function showBanner() {
     if (bannerTimer) { clearTimeout(bannerTimer); }
     const b = document.getElementById('newBanner');
@@ -273,15 +229,12 @@ function showBanner() {
     bannerTimer = setTimeout(() => { b.style.display = 'none'; bannerTimer = null; }, 4000);
 }
 
-// ══ الساعة ══
 function updateClock() {
-    document.getElementById('clock').innerText =
-        new Date().toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('clock').innerText = new Date().toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'});
 }
 updateClock();
 setInterval(updateClock, 1000);
 
-// ══ Toggle ══
 function renderToggle(isOpen) {
     currentIsOpen = isOpen;
     const icon  = document.getElementById('toggleIcon');
@@ -303,13 +256,8 @@ function renderToggle(isOpen) {
 async function fetchStatus() {
     try {
         const {data,error} = await db.from('salon_status').select('is_open').eq('id',1).single();
-        if (!error && data) {
-            renderToggle(data.is_open);
-            setOnlineStatus(true);
-        }
-    } catch(e) {
-        setOnlineStatus(false);
-    }
+        if (!error && data) renderToggle(data.is_open);
+    } catch(e) {}
 }
 
 async function toggleStatus() {
@@ -321,7 +269,6 @@ async function toggleStatus() {
     } catch(e) { renderToggle(!n); }
 }
 
-// ══ Drawer ══
 function openDrawer()  { renderDrawer(); document.getElementById('drawerOverlay').classList.add('show'); document.getElementById('drawer').classList.add('open'); }
 function closeDrawer() { document.getElementById('drawerOverlay').classList.remove('show'); document.getElementById('drawer').classList.remove('open'); }
 
@@ -337,70 +284,41 @@ function renderDrawer() {
         const t = new Date(c.created_at).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'});
         const row = document.createElement('div');
         row.className = 'queue-row'+(first?' first':'');
-        row.innerHTML =
-            '<div class="qr-num'+(first?' first-num':'')+'">'+( i+1)+'</div>'+
-            '<div class="qr-info">'+
-                '<h4>'+esc(c.customer_name)+(first?' <span style="font-size:11px;color:var(--gold);">← التالي</span>':'')+'</h4>'+
-                (c.phone ? '<a class="qr-phone" href="tel:'+esc(c.phone)+'"><i class="fas fa-phone-alt"></i> '+esc(c.phone)+'</a>'
-                         : '<span class="qr-phone">لا يوجد رقم</span>')+
-            '</div>'+
-            '<div class="qr-time">'+t+'</div>';
+        row.innerHTML = '<div class="qr-num'+(first?' first-num':'')+'">'+( i+1)+'</div><div class="qr-info"><h4>'+esc(c.customer_name)+(first?' <span style="font-size:11px;color:var(--gold);">← التالي</span>':'')+'</h4>'+(c.phone ? '<a class="qr-phone" href="tel:'+esc(c.phone)+'"><i class="fas fa-phone-alt"></i> '+esc(c.phone)+'</a>' : '<span class="qr-phone">لا يوجد رقم</span>')+'</div><div class="qr-time">'+t+'</div>';
         body.appendChild(row);
     });
 }
 
-// ══ جلب الزبائن — محسّن ونظيف ══
 async function fetchQueue() {
     if (isFetching) return;
     isFetching = true;
     try {
-        const {data,error} = await db
-            .from('appointments')
-            .select('*')
-            .in('status',['pending','approved'])
-            .order('id',{ascending:true});
+        const {data,error} = await db.from('appointments').select('*').in('status',['pending','approved']).order('id',{ascending:true});
+        if (error) { console.error('DB error:',error.message); isFetching=false; return; }
 
-        if (error) { 
-            console.error('خطأ DB:', error.message);
-            setOnlineStatus(false);
-            isFetching = false; 
-            return; 
-        }
-
-        setOnlineStatus(true);
         const rows = data || [];
 
-        // ── كشف الجدد فقط ══
-        // لو أول مرة، ما نشغل البانر
-        // لو في حجز جديد فعلاً، نشغل الإشعار مرة وحدة
         if (firstFetchDone) {
             const newOnes = rows.filter(c => !knownIds.has(c.id) && c.status==='pending');
-            if (newOnes.length > 0) {
-                console.log('🎯 حجز جديد كتشف:', newOnes[0].customer_name);
+            if (newOnes.length > 0 && lastNotifId !== newOnes[0].id) {
+                lastNotifId = newOnes[0].id;
                 playSound();
                 showBanner();
                 fireNotif('🔔 زبون جديد حجز!', 'الاسم: '+newOnes[0].customer_name);
             }
         }
 
-        // تحديث قائمة الـ IDs
         knownIds = new Set(rows.map(c => c.id));
         firstFetchDone = true;
-        saveSavedState(); // حفظ في localStorage
-
         cachedPending = rows.filter(c => c.status==='pending');
         const approved = rows.filter(c => c.status==='approved');
 
-        document.getElementById('pendingCount').innerText  = cachedPending.length;
+        document.getElementById('pendingCount').innerText = cachedPending.length;
         document.getElementById('approvedCount').innerText = approved.length;
 
         if (document.getElementById('drawer').classList.contains('open')) renderDrawer();
         renderCards([...approved,...cachedPending]);
-
-    } catch(e) { 
-        console.error('خطأ في fetchQueue:', e);
-        setOnlineStatus(false);
-    }
+    } catch(e) { console.error('fetchQueue:',e); }
     isFetching = false;
 }
 
@@ -408,45 +326,25 @@ function renderCards(sorted) {
     const div = document.getElementById('queueList');
     div.innerHTML = '';
     if (!sorted.length) {
-        div.innerHTML = '<div class="empty-state"><i class="fa-solid fa-mug-hot"></i><h3>لا يوجد زبائن حالياً</h3><p style="font-size:13px;margin-top:5px;">شارك رابط الحجز مع زبائنك!</p></div>';
+        div.innerHTML = '<div class="empty-state"><i class="fa-solid fa-mug-hot"></i><h3>لا يوجد زبائن حالياً</h3></div>';
         return;
     }
     sorted.forEach(c => {
-        const isPending  = c.status==='pending';
-        const pidx       = cachedPending.findIndex(x=>x.id===c.id);
-        const isFirst    = isPending && pidx===0;
-        const t          = new Date(c.created_at).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'});
-        const phoneHtml  = c.phone
-            ? '<a class="phone-btn" href="tel:'+esc(c.phone)+'"><i class="fas fa-phone-alt"></i>'+esc(c.phone)+'</a>'
-            : '<span class="no-phone">لا يوجد رقم</span>';
+        const isPending = c.status==='pending';
+        const pidx = cachedPending.findIndex(x=>x.id===c.id);
+        const isFirst = isPending && pidx===0;
+        const t = new Date(c.created_at).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'});
+        const phoneHtml = c.phone ? '<a class="phone-btn" href="tel:'+esc(c.phone)+'"><i class="fas fa-phone-alt"></i>'+esc(c.phone)+'</a>' : '<span class="no-phone">لا يوجد رقم</span>';
         const card = document.createElement('div');
         card.className = 'customer-card'+(isFirst?' first-in-queue':'');
-        card.innerHTML =
-            '<div class="card-status-bar '+(isPending?'status-pending':'status-approved')+'"></div>'+
-            (isPending?'<div class="turn-badge">'+(pidx+1)+'</div>':'')+
-            '<div class="customer-header">'+
-                '<div class="customer-info">'+
-                    '<div class="customer-avatar"><i class="fa-solid fa-user"></i></div>'+
-                    '<div class="customer-details">'+
-                        '<h3>'+esc(c.customer_name)+'</h3>'+
-                        '<span style="font-size:11px;color:var(--muted);"><i class="fa-regular fa-clock"></i> '+t+'</span>'+
-                    '</div>'+
-                '</div>'+
-                '<span class="status-badge '+(isPending?'badge-pending':'badge-approved')+'">'+
-                    (isPending?'ينتظر':'✂️ يحلق الآن')+
-                '</span>'+
-            '</div>'+
-            '<div class="phone-row">'+phoneHtml+'</div>'+
-            '<div>'+
-                (isPending
-                    ? '<button class="btn btn-call" onclick="doUpdate('+c.id+',\'approved\',this)"><i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي</button>'
-                    : '<button class="btn btn-done" onclick="doUpdate('+c.id+',\'completed\',this)"><i class="fa-solid fa-check-double"></i> إنهاء الخدمة</button>')+
-            '</div>';
+        card.innerHTML = '<div class="card-status-bar '+(isPending?'status-pending':'status-approved')+'"></div>'+(isPending?'<div class="turn-badge">'+(pidx+1)+'</div>':'')+
+            '<div class="customer-header"><div class="customer-info"><div class="customer-avatar"><i class="fa-solid fa-user"></i></div><div class="customer-details"><h3>'+esc(c.customer_name)+'</h3><span style="font-size:11px;color:var(--muted);"><i class="fa-regular fa-clock"></i> '+t+'</span></div></div><span class="status-badge '+(isPending?'badge-pending':'badge-approved')+'">'+
+            (isPending?'ينتظر':'✂️ يحلق الآن')+'</span></div><div class="phone-row">'+phoneHtml+'</div><div>'+
+            (isPending ? '<button class="btn btn-call" onclick="doUpdate('+c.id+',\'approved\',this)"><i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي</button>' : '<button class="btn btn-done" onclick="doUpdate('+c.id+',\'completed\',this)"><i class="fa-solid fa-check-double"></i> إنهاء الخدمة</button>')+'</div>';
         div.appendChild(card);
     });
 }
 
-// ══ تحديث — مع حماية ══
 async function doUpdate(id, newStatus, btn) {
     if (btn.disabled) return;
     btn.disabled = true;
@@ -457,64 +355,45 @@ async function doUpdate(id, newStatus, btn) {
     } catch(e) { alert('خطأ في الاتصال'); btn.disabled=false; }
 }
 
-// ══ مساعد XSS ══
 function esc(s){ return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''; }
 
-// ══ Real-time Listener — تحديث فوري من Supabase ══
-function setupRealtimeListener() {
+// ══ Real-time Listener — تحديث فوري ══
+async function setupRealtime() {
     try {
-        // استماع لأي تغيير في الحجوزات
-        const channel = db.channel('public:appointments')
-            .on('postgres_changes', 
-                { event: '*', schema: 'public', table: 'appointments' },
+        db.channel('appointments-changes')
+            .on('postgres_changes',
+                {event: 'INSERT', schema: 'public', table: 'appointments'},
                 (payload) => {
-                    console.log('📡 تحديث فوري من Supabase:', payload.eventType);
-                    // تحديث فوري جداً بدون تأخير
+                    console.log('📡 حجز جديد!');
+                    fetchQueue();
+                }
+            )
+            .on('postgres_changes',
+                {event: 'UPDATE', schema: 'public', table: 'appointments'},
+                (payload) => {
+                    console.log('🔄 تحديث حجز');
                     fetchQueue();
                 }
             )
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
-                    console.log('✅ Real-time مفعّل — تحديث فوري!');
+                    console.log('✅ تحديث فوري فعّال');
                 }
             });
     } catch(e) {
-        console.warn('Real-time appointments ما اشتغل');
-    }
-
-    try {
-        // استماع لتغييرات حالة الصالون
-        const statusChannel = db.channel('public:salon_status')
-            .on('postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: 'salon_status' },
-                (payload) => {
-                    console.log('🔄 حالة الصالون تغيرت');
-                    fetchStatus();
-                }
-            )
-            .subscribe();
-    } catch(e) {
-        console.warn('Real-time salon_status ما اشتغل');
+        console.log('Real-time ما اشتغل، بستخدم Polling');
     }
 }
 
-// ══ تهيئة ══
-loadSavedState();         // تحميل الحالة المحفوظة
 registerSW();
 checkNotifStatus();
 fetchStatus();
 fetchQueue();
+setupRealtime();
 
-// Real-time الأول (تحديث فوري)
-setupRealtimeListener();
-
-// Polling كـ Backup — كل 10 ثواني (آمن)
-setInterval(fetchQueue,  10000);
-setInterval(fetchStatus, 15000);
-
-// تحديث حالة الاتصال عند الكسر
-window.addEventListener('online',  () => { setOnlineStatus(true);  fetchQueue(); });
-window.addEventListener('offline', () => { setOnlineStatus(false); });
+// Polling كـ Backup — كل 3 ثواني
+setInterval(fetchQueue, 3000);
+setInterval(fetchStatus, 8000);
 </script>
 </body>
 </html>
