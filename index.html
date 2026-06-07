@@ -191,6 +191,16 @@
 
     <div class="container">
 
+        <!-- إضافة/تحديث الملف الصوتي -->
+        <div style="background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.2); border-radius: 14px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+            <div style="font-size: 13px; color: #cbd5e0; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-music" style="color: var(--gold);"></i>
+                <span id="soundStatus">لم يتم تحميل ملف صوتي بعد</span>
+            </div>
+            <input type="file" id="soundUpload" accept="audio/*" style="display: none;">
+            <button onclick="document.getElementById('soundUpload').click()" style="background: var(--gold); color: #000; border: none; border-radius: 10px; padding: 6px 12px; font-size: 12px; font-weight: 800; cursor: pointer; font-family: 'Cairo', sans-serif;">اختر ملف</button>
+        </div>
+
         <!-- شريط الإشعارات -->
         <div class="notif-bar" id="notifBar">
             <div class="notif-bar-text">
@@ -250,6 +260,21 @@
         let firstFetchDone = false;
         let currentIsOpen = true;
         let cachedPending = [];
+        let userAudioBlob = null;
+        let userAudioURL = null;
+
+        /* ══════════════════════════════
+           ── رفع ملف صوتي مخصص ──
+        ══════════════════════════════ */
+        document.getElementById('soundUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                userAudioBlob = file;
+                userAudioURL = URL.createObjectURL(file);
+                document.getElementById('soundStatus').textContent = '✅ ' + file.name;
+                console.log('✓ تم تحميل ملف صوتي:', file.name);
+            }
+        });
 
         /* ══════════════════════════════
            ── Service Worker + الإشعارات ──
@@ -260,7 +285,6 @@
             if (!('serviceWorker' in navigator)) return;
             try {
                 swRegistration = await navigator.serviceWorker.register('sw.js');
-                // نبعث رسالة كل 10 ثواني يبقى الـ SW شغال
                 setInterval(() => {
                     if (swRegistration && swRegistration.active) {
                         swRegistration.active.postMessage({ type: 'KEEP_ALIVE' });
@@ -293,7 +317,6 @@
             checkNotifStatus();
             if (permission === 'granted') {
                 await registerSW();
-                // إشعار تجريبي
                 if (swRegistration) {
                     swRegistration.showNotification('✅ تم تفعيل الإشعارات', {
                         body: 'ستصلك تنبيهات حتى لو الشاشة مقفلة',
@@ -306,7 +329,6 @@
 
         function sendBookingNotification(customerName) {
             if (Notification.permission !== 'granted') return;
-            // tag فريد لكل إشعار علمود ما يحل محل السابق
             const uniqueTag = 'booking-' + Date.now();
             if (swRegistration) {
                 swRegistration.showNotification('🔔 زبون جديد حجز!', {
@@ -330,49 +352,27 @@
         }
 
         /* ══════════════════════════════
-           ── صوت التنبيه القوي ──
+           ── صوت التنبيه ──
         ══════════════════════════════ */
         function playNewBookingSound() {
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-                // نغمة تنبيه قوية ومتكررة
-                const notes = [
-                    { freq: 1000, start: 0.0,  dur: 0.15, vol: 0.8 },
-                    { freq: 1000, start: 0.2,  dur: 0.15, vol: 0.8 },
-                    { freq: 1300, start: 0.4,  dur: 0.25, vol: 0.9 },
-                    { freq: 1000, start: 0.75, dur: 0.15, vol: 0.8 },
-                    { freq: 1000, start: 0.95, dur: 0.15, vol: 0.8 },
-                    { freq: 1300, start: 1.15, dur: 0.35, vol: 1.0 },
-                ];
-
-                notes.forEach(({ freq, start, dur, vol }) => {
-                    const osc  = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    // distortion للصوت يكون أقوى
-                    const wave = ctx.createWaveShaper();
-                    const curve = new Float32Array(256);
-                    for (let i = 0; i < 256; i++) {
-                        const x = (i * 2) / 256 - 1;
-                        curve[i] = (Math.PI + 200) * x / (Math.PI + 200 * Math.abs(x));
-                    }
-                    wave.curve = curve;
-
-                    osc.connect(gain);
-                    gain.connect(wave);
-                    wave.connect(ctx.destination);
-
-                    osc.type = 'square';
-                    osc.frequency.value = freq;
-
-                    const s = ctx.currentTime + start;
-                    gain.gain.setValueAtTime(0, s);
-                    gain.gain.linearRampToValueAtTime(vol, s + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.001, s + dur);
-                    osc.start(s);
-                    osc.stop(s + dur + 0.05);
-                });
-
+                let audio;
+                
+                // إذا كان هناك ملف مرفوع، استخدمه
+                if (userAudioURL) {
+                    audio = new Audio(userAudioURL);
+                } else {
+                    // وإلا استخدم الملف الافتراضي
+                    audio = new Audio('mhma.mp3');
+                }
+                
+                audio.volume = 1.0;
+                audio.play().catch(e => console.warn('Audio play blocked:', e));
+                
+                // اهتزاز قوي
+                if (navigator.vibrate) {
+                    navigator.vibrate([400, 100, 400, 100, 400, 100, 400]);
+                }
             } catch(e) { console.warn('Sound error:', e); }
         }
 
