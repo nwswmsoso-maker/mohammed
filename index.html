@@ -101,6 +101,10 @@
         .qr-time{font-size:11px;color:var(--muted);flex-shrink:0;}
         .drawer-empty{text-align:center;padding:40px 20px;color:var(--muted);}
         .drawer-empty i{font-size:36px;display:block;margin-bottom:12px;opacity:0.3;}
+        .refresh-indicator{position:fixed;bottom:20px;right:20px;width:48px;height:48px;border-radius:50%;background:rgba(212,175,55,0.2);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:20px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:50;}
+        .refresh-indicator.show{opacity:1;}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .refresh-indicator.spinning{animation:spin 1s linear infinite;}
     </style>
 </head>
 <body>
@@ -151,6 +155,10 @@
     <div class="queue-grid" id="queueList"></div>
 </div>
 
+<div class="refresh-indicator" id="refreshIndicator">
+    <i class="fa-solid fa-sync-alt"></i>
+</div>
+
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
     <div class="drawer-handle" onclick="closeDrawer()"></div>
@@ -168,18 +176,19 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ══ المتغيرات الكلية ══
 let currentIsOpen  = false;
-let knownIds       = new Set();  // IDs اللي شفناها — لكشف الجديد
-let firstFetchDone = false;      // أول جلب انتهى؟
-let cachedPending  = [];         // قائمة الانتظار
+let knownIds       = new Set();
+let firstFetchDone = false;
+let cachedPending  = [];
 let swReg          = null;
-let isFetching     = false;      // منع طلبين بنفس الوقت
-let bannerTimer    = null;       // منع تكرار البانر
+let isFetching     = false;
+let bannerTimer    = null;
+let realtimeActive = false;
 
 // ══ Service Worker ══
 async function registerSW() {
     if (!('serviceWorker' in navigator)) return;
     try { swReg = await navigator.serviceWorker.register('sw.js'); }
-    catch(e) { swReg = null; } // sw.js مو موجود — مش مشكلة
+    catch(e) { swReg = null; }
 }
 
 // ══ الإشعارات ══
@@ -206,7 +215,6 @@ async function requestNotifPermission() {
     }
 }
 
-// إشعار واحد فقط — tag ثابت يمنع التكرار
 function fireNotif(title, body) {
     if (Notification.permission !== 'granted') return;
     const opts = { body, icon: 'cover.jpg', tag: 'salon-alert', renotify: true, requireInteraction: true, vibrate: [300,100,300] };
@@ -218,10 +226,20 @@ function fireNotif(title, body) {
     }
 }
 
-// ══ الصوت ══
+// ══ الصوت والاهتزاز ══
 function playSound() {
     try { new Audio('mhma.mp3').play().catch(()=>{}); } catch(e) {}
     if (navigator.vibrate) navigator.vibrate([400,100,400,100,400]);
+}
+
+// ══ مؤشر التحديث ══
+function showRefreshIndicator() {
+    const ind = document.getElementById('refreshIndicator');
+    ind.classList.add('show', 'spinning');
+    setTimeout(() => {
+        ind.classList.remove('spinning');
+        setTimeout(() => ind.classList.remove('show'), 300);
+    }, 600);
 }
 
 // ══ الساعة ══
@@ -250,12 +268,14 @@ function renderToggle(isOpen) {
         btn.className   = 'toggle-btn closed';
     }
 }
+
 async function fetchStatus() {
     try {
         const {data,error} = await db.from('salon_status').select('is_open').eq('id',1).single();
         if (!error && data) renderToggle(data.is_open);
     } catch(e) {}
 }
+
 async function toggleStatus() {
     const n = !currentIsOpen;
     renderToggle(n);
@@ -265,7 +285,7 @@ async function toggleStatus() {
     } catch(e) { renderToggle(!n); }
 }
 
-// ══ البانر — مرة وحدة ══
+// ══ البانر ══
 function showBanner() {
     if (bannerTimer) { clearTimeout(bannerTimer); }
     const b = document.getElementById('newBanner');
@@ -278,6 +298,7 @@ function showBanner() {
 // ══ Drawer ══
 function openDrawer()  { renderDrawer(); document.getElementById('drawerOverlay').classList.add('show'); document.getElementById('drawer').classList.add('open'); }
 function closeDrawer() { document.getElementById('drawerOverlay').classList.remove('show'); document.getElementById('drawer').classList.remove('open'); }
+
 function renderDrawer() {
     const body = document.getElementById('drawerBody');
     body.innerHTML = '';
@@ -302,7 +323,7 @@ function renderDrawer() {
     });
 }
 
-// ══ جلب الزبائن — القلب ══
+// ══ جلب الزبائن (محسّن) ══
 async function fetchQueue() {
     if (isFetching) return;
     isFetching = true;
@@ -317,17 +338,17 @@ async function fetchQueue() {
 
         const rows = data || [];
 
-        // ── كشف الجدد فقط بعد أول تحميل ──
+        // كشف الجدد فقط بعد أول تحميل
         if (firstFetchDone) {
             const newOnes = rows.filter(c => !knownIds.has(c.id) && c.status==='pending');
             if (newOnes.length > 0) {
+                showRefreshIndicator();
                 playSound();
                 showBanner();
                 fireNotif('🔔 زبون جديد حجز!', 'الاسم: '+newOnes[0].customer_name);
             }
         }
 
-        // تحديث الـ IDs المعروفة
         knownIds = new Set(rows.map(c => c.id));
         firstFetchDone = true;
 
@@ -386,7 +407,7 @@ function renderCards(sorted) {
     });
 }
 
-// ══ تحديث — مع حماية من الضغط المزدوج ══
+// ══ تحديث مع حماية ══
 async function doUpdate(id, newStatus, btn) {
     if (btn.disabled) return;
     btn.disabled = true;
@@ -397,6 +418,29 @@ async function doUpdate(id, newStatus, btn) {
     } catch(e) { alert('خطأ في الاتصال'); btn.disabled=false; }
 }
 
+// ══ Real-time Listener (التحديثات الفورية) ══
+function setupRealtimeListener() {
+    try {
+        const channel = db.channel('public:appointments')
+            .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'appointments' },
+                (payload) => {
+                    console.log('📡 تحديث فوري:', payload.eventType);
+                    setTimeout(() => fetchQueue(), 100);
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('✅ Real-time listener فعّال');
+                    realtimeActive = true;
+                }
+            });
+    } catch(e) {
+        console.warn('Real-time ما اشتغل، بستخدم polling');
+        realtimeActive = false;
+    }
+}
+
 // ══ مساعد XSS ══
 function esc(s){ return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''; }
 
@@ -405,8 +449,13 @@ registerSW();
 checkNotifStatus();
 fetchStatus();
 fetchQueue();
-setInterval(fetchQueue,  3000);
-setInterval(fetchStatus, 8000);
+
+// Real-time أولاً (الأفضل)
+setupRealtimeListener();
+
+// Polling كـ backup (كل 5 ثواني)
+setInterval(fetchQueue,  5000);
+setInterval(fetchStatus, 10000);
 </script>
 </body>
 </html>
