@@ -247,6 +247,7 @@
 
         let knownIds = new Set();
         let firstLoad = true;
+        let firstFetchDone = false;
         let currentIsOpen = true;
         let cachedPending = [];
 
@@ -305,7 +306,8 @@
 
         function sendBookingNotification(customerName) {
             if (Notification.permission !== 'granted') return;
-            // عبر Service Worker — يشتغل حتى لو الشاشة مقفلة
+            // tag فريد لكل إشعار علمود ما يحل محل السابق
+            const uniqueTag = 'booking-' + Date.now();
             if (swRegistration) {
                 swRegistration.showNotification('🔔 زبون جديد حجز!', {
                     body: 'الاسم: ' + customerName,
@@ -313,18 +315,15 @@
                     badge: 'cover.jpg',
                     vibrate: [400, 100, 400, 100, 400, 100, 400],
                     requireInteraction: true,
-                    tag: 'new-booking',
-                    renotify: true,
+                    tag: uniqueTag,
                     data: { url: './admin.html' }
                 });
             } else {
-                // fallback
                 const notif = new Notification('🔔 زبون جديد حجز!', {
                     body: 'الاسم: ' + customerName,
                     icon: 'cover.jpg',
                     requireInteraction: true,
-                    tag: 'new-booking',
-                    renotify: true
+                    tag: uniqueTag
                 });
                 notif.onclick = () => { window.focus(); notif.close(); };
             }
@@ -479,24 +478,24 @@
 
             const currentIds = new Set((data || []).map(c => c.id));
 
-            if (!firstLoad) {
+            if (firstFetchDone) {
                 let newCustomers = [];
                 currentIds.forEach(id => {
                     if (!knownIds.has(id)) {
                         const c = (data || []).find(x => x.id === id);
-                        if (c) newCustomers.push(c);
+                        if (c && c.status === 'pending') newCustomers.push(c);
                     }
                 });
                 if (newCustomers.length > 0) {
                     playNewBookingSound();
                     showNewBanner();
-                    // إشعار لكل زبون جديد
                     newCustomers.forEach(c => sendBookingNotification(c.customer_name));
                 }
             }
 
             knownIds = currentIds;
             firstLoad = false;
+            firstFetchDone = true;
 
             cachedPending = (data || []).filter(c => c.status === 'pending');
             const approved = (data || []).filter(c => c.status === 'approved');
@@ -566,7 +565,7 @@
         checkNotifStatus();
         fetchStatus();
         fetchQueue();
-        setInterval(fetchQueue,  3000);
+        setInterval(fetchQueue, 2000);
         setInterval(fetchStatus, 5000);
     </script>
 </body>
