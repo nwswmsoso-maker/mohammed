@@ -4,528 +4,409 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>إدارة صالون محمد عدنان</title>
-
     <link rel="icon" href="cover.jpg" type="image/jpeg" sizes="any">
     <link rel="apple-touch-icon" href="cover.jpg">
-    <link rel="shortcut icon" href="cover.jpg" type="image/jpeg">
-
-    <meta property="og:title" content="إدارة صالون محمد عدنان">
-    <meta property="og:image" content="cover.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --bg: #0f1115; --card: #1a1d24; --gold: #d4af37;
-            --gold-hover: #b5952f; --muted: #8b8d93;
-            --success: #28a745; --danger: #dc3545;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: #fff; min-height: 100vh; padding-bottom: 30px; }
-
-        .top-navbar {
-            background: var(--card); padding: 15px 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .logo-area { display: flex; align-items: center; gap: 10px; }
-        .logo-area i { font-size: 24px; color: var(--gold); }
-        .logo-area h2 { font-size: 18px; font-weight: 800; }
-        .logo-area span { color: var(--gold); }
-        .clock-area { font-size: 14px; font-weight: 700; color: var(--gold); background: rgba(212,175,55,0.1); padding: 5px 10px; border-radius: 8px; }
-
-        .container { padding: 20px; }
-
-        .notif-bar {
-            background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.3);
-            border-radius: 14px; padding: 12px 16px; margin-bottom: 16px;
-            display: flex; align-items: center; justify-content: space-between; gap: 10px;
-        }
-        .notif-bar.hidden { display: none !important; }
-        .notif-bar-text { font-size: 13px; color: #cbd5e0; display: flex; align-items: center; gap: 8px; }
-        .notif-bar-text i { color: var(--gold); }
-        .notif-btn {
-            background: var(--gold); color: #000; border: none; border-radius: 10px;
-            padding: 8px 16px; font-size: 13px; font-weight: 800; cursor: pointer;
-            font-family: 'Cairo', sans-serif; white-space: nowrap; flex-shrink: 0;
-        }
-        .notif-granted { background: rgba(46,213,115,0.1); border-color: rgba(46,213,115,0.3); }
-        .notif-granted .notif-bar-text { color: #2ed573; }
-
-        .toggle-card {
-            background: var(--card); border-radius: 18px; padding: 20px 25px;
-            border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;
-            display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .toggle-info { display: flex; align-items: center; gap: 12px; }
-        .toggle-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; transition: all 0.4s; }
-        .toggle-icon.open   { background: rgba(46,213,115,0.15); color: #2ed573; }
-        .toggle-icon.closed { background: rgba(220,53,69,0.15);  color: var(--danger); }
-        .toggle-label h4 { font-size: 14px; color: var(--muted); margin-bottom: 3px; }
-        .toggle-label h3 { font-size: 18px; font-weight: 800; }
-        .toggle-label h3.open   { color: #2ed573; }
-        .toggle-label h3.closed { color: var(--danger); }
-
-        .toggle-btn {
-            width: 64px; height: 34px; border-radius: 17px; border: none; cursor: pointer;
-            position: relative; transition: background 0.4s ease; flex-shrink: 0;
-        }
-        .toggle-btn.open   { background: #2ed573; }
-        .toggle-btn.closed { background: #444; }
-        .toggle-btn::after {
-            content: ''; position: absolute; top: 4px;
-            width: 26px; height: 26px; background: #fff; border-radius: 50%;
-            transition: left 0.4s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
-        .toggle-btn.open::after  { left: 34px; }
-        .toggle-btn.closed::after { left: 4px; }
-
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .stat-card { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center; cursor: default; transition: all 0.2s; }
-        .stat-card.clickable { cursor: pointer; border-color: rgba(212,175,55,0.15); }
-        .stat-card.clickable:hover { background: #1f2330; border-color: rgba(212,175,55,0.35); }
-        .stat-card.clickable:active { transform: scale(0.97); }
-        .stat-icon { width: 40px; height: 40px; margin: 0 auto 10px; border-radius: 10px; background: rgba(212,175,55,0.1); color: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 18px; }
-        .stat-info h4 { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
-        .stat-info h2 { font-size: 22px; font-weight: 800; }
-        .tap-hint { font-size: 10px; color: var(--gold); margin-top: 5px; opacity: 0.7; }
-
-        .section-title { font-size: 18px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-        .queue-grid { display: flex; flex-direction: column; gap: 15px; }
-
-        .turn-badge {
-            position: absolute; top: 14px; left: 16px;
-            width: 30px; height: 30px; border-radius: 50%;
-            background: rgba(212,175,55,0.12); border: 1px solid rgba(212,175,55,0.3);
-            color: var(--gold); font-size: 13px; font-weight: 800;
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .customer-card {
-            background: var(--card); border-radius: 15px; padding: 18px 18px 18px 20px;
-            border: 1px solid rgba(255,255,255,0.05); position: relative;
-            overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            animation: slideIn 0.4s ease;
-        }
-        .customer-card.first-in-queue { border-color: rgba(212,175,55,0.25); box-shadow: 0 4px 20px rgba(212,175,55,0.1); }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .card-status-bar { position: absolute; top: 0; right: 0; width: 4px; height: 100%; }
-        .status-pending  { background: var(--gold); }
-        .status-approved { background: var(--success); }
-
-        .customer-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
-        .customer-info   { display: flex; align-items: center; gap: 12px; }
-        .customer-avatar { width: 45px; height: 45px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--muted); flex-shrink: 0; }
-        .customer-details h3 { font-size: 16px; margin-bottom: 3px; }
-
-        .phone-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
-        .phone-btn { display: inline-flex; align-items: center; gap: 7px; background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.2); border-radius: 30px; padding: 6px 14px; color: #cbd5e0; text-decoration: none; font-size: 14px; font-weight: 700; direction: ltr; letter-spacing: 0.5px; transition: all 0.2s; }
-        .phone-btn i { color: var(--gold); font-size: 13px; }
-        .phone-btn:hover, .phone-btn:active { background: rgba(212,175,55,0.18); color: var(--gold); }
-        .no-phone { font-size: 12px; color: var(--muted); font-style: italic; }
-
-        .status-badge { font-size: 11px; padding: 4px 10px; border-radius: 6px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
-        .badge-pending  { background: rgba(212,175,55,0.1); color: var(--gold); }
-        .badge-approved { background: rgba(40,167,69,0.1);  color: var(--success); }
-
-        .btn { width: 100%; padding: 13px; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Cairo', sans-serif; transition: all 0.2s; }
-        .btn-call { background: var(--gold); color: #000; }
-        .btn-call:active { transform: scale(0.98); background: var(--gold-hover); }
-        .btn-done { background: transparent; color: var(--success); border: 1px solid var(--success); }
-        .btn-done:active { transform: scale(0.98); background: rgba(40,167,69,0.1); }
-
-        .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); background: var(--card); border-radius: 15px; border: 1px dashed rgba(255,255,255,0.1); }
-        .empty-state i { font-size: 40px; margin-bottom: 15px; color: rgba(255,255,255,0.1); display: block; }
-
-        .new-banner {
-            display: none; position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
-            background: linear-gradient(135deg, #d4af37, #f3cf55);
-            color: #000; font-size: 16px; font-weight: 800;
-            padding: 12px 25px; border-radius: 50px; z-index: 500;
-            box-shadow: 0 5px 25px rgba(212,175,55,0.5); white-space: nowrap;
-        }
-        @keyframes bannerPop { from { transform: translateX(-50%) scale(0.7); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
-
-        .drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; backdrop-filter: blur(3px); }
-        .drawer-overlay.show { display: block; }
-        .drawer { position: fixed; bottom: 0; left: 0; right: 0; background: #13161e; border-radius: 28px 28px 0 0; border-top: 1px solid rgba(212,175,55,0.15); z-index: 300; max-height: 80vh; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
-        .drawer.open { transform: translateY(0); }
-        .drawer-handle { width: 40px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; margin: 14px auto 0; cursor: pointer; flex-shrink: 0; }
-        .drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
-        .drawer-header h3 { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-        .drawer-header h3 i { color: var(--gold); }
-        .drawer-close { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.07); border: none; color: #fff; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .drawer-body { overflow-y: auto; padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
-        .queue-row { background: var(--card); border-radius: 14px; padding: 14px 16px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 14px; animation: slideIn 0.3s ease; }
-        .queue-row.first { border-color: rgba(212,175,55,0.3); background: rgba(212,175,55,0.05); }
-        .qr-num { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.25); color: var(--gold); }
-        .qr-num.first-num { background: var(--gold); color: #000; border: none; }
-        .qr-info { flex: 1; min-width: 0; }
-        .qr-info h4 { font-size: 15px; font-weight: 700; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .qr-info .qr-phone { font-size: 12px; color: var(--muted); direction: ltr; display: inline-flex; align-items: center; gap: 5px; }
-        .qr-info .qr-phone i { color: var(--gold); font-size: 11px; }
-        .qr-time { font-size: 11px; color: var(--muted); flex-shrink: 0; }
-        .drawer-empty { text-align: center; padding: 40px 20px; color: var(--muted); }
-        .drawer-empty i { font-size: 36px; display: block; margin-bottom: 12px; opacity: 0.3; }
-        .qr-phone { color: var(--muted); text-decoration: none; }
-        .qr-phone:hover { color: var(--gold); }
+        :root { --bg:#0f1115;--card:#1a1d24;--gold:#d4af37;--gold-hover:#b5952f;--muted:#8b8d93;--success:#28a745;--danger:#dc3545; }
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Cairo',sans-serif;-webkit-tap-highlight-color:transparent;}
+        body{background:var(--bg);color:#fff;min-height:100vh;padding-bottom:30px;}
+        .top-navbar{background:var(--card);padding:15px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.05);position:sticky;top:0;z-index:100;box-shadow:0 4px 15px rgba(0,0,0,0.3);}
+        .logo-area{display:flex;align-items:center;gap:10px;}
+        .logo-area i{font-size:24px;color:var(--gold);}
+        .logo-area h2{font-size:18px;font-weight:800;}
+        .logo-area span{color:var(--gold);}
+        .clock-area{font-size:14px;font-weight:700;color:var(--gold);background:rgba(212,175,55,0.1);padding:5px 10px;border-radius:8px;}
+        .container{padding:20px;}
+        .notif-bar{background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:14px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+        .notif-bar.hidden{display:none!important;}
+        .notif-bar-text{font-size:13px;color:#cbd5e0;display:flex;align-items:center;gap:8px;}
+        .notif-bar-text i{color:var(--gold);}
+        .notif-btn{background:var(--gold);color:#000;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Cairo',sans-serif;white-space:nowrap;flex-shrink:0;}
+        .notif-granted{background:rgba(46,213,115,0.1);border-color:rgba(46,213,115,0.3);}
+        .notif-granted .notif-bar-text{color:#2ed573;}
+        .toggle-card{background:var(--card);border-radius:18px;padding:20px 25px;border:1px solid rgba(255,255,255,0.05);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
+        .toggle-info{display:flex;align-items:center;gap:12px;}
+        .toggle-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;transition:all 0.4s;}
+        .toggle-icon.open{background:rgba(46,213,115,0.15);color:#2ed573;}
+        .toggle-icon.closed{background:rgba(220,53,69,0.15);color:var(--danger);}
+        .toggle-label h4{font-size:14px;color:var(--muted);margin-bottom:3px;}
+        .toggle-label h3{font-size:18px;font-weight:800;}
+        .toggle-label h3.open{color:#2ed573;}
+        .toggle-label h3.closed{color:var(--danger);}
+        .toggle-btn{width:64px;height:34px;border-radius:17px;border:none;cursor:pointer;position:relative;transition:background 0.4s ease;flex-shrink:0;}
+        .toggle-btn.open{background:#2ed573;}
+        .toggle-btn.closed{background:#444;}
+        .toggle-btn::after{content:'';position:absolute;top:4px;width:26px;height:26px;background:#fff;border-radius:50%;transition:left 0.4s ease;box-shadow:0 2px 6px rgba(0,0,0,0.3);}
+        .toggle-btn.open::after{left:34px;}
+        .toggle-btn.closed::after{left:4px;}
+        .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:25px;}
+        .stat-card{background:var(--card);padding:15px;border-radius:12px;border:1px solid rgba(255,255,255,0.05);text-align:center;cursor:default;transition:all 0.2s;}
+        .stat-card.clickable{cursor:pointer;border-color:rgba(212,175,55,0.15);}
+        .stat-card.clickable:active{transform:scale(0.97);}
+        .stat-icon{width:40px;height:40px;margin:0 auto 10px;border-radius:10px;background:rgba(212,175,55,0.1);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:18px;}
+        .stat-info h4{color:var(--muted);font-size:12px;margin-bottom:5px;}
+        .stat-info h2{font-size:22px;font-weight:800;}
+        .tap-hint{font-size:10px;color:var(--gold);margin-top:5px;opacity:0.7;}
+        .section-title{font-size:18px;margin-bottom:15px;display:flex;align-items:center;gap:8px;}
+        .queue-grid{display:flex;flex-direction:column;gap:15px;}
+        .turn-badge{position:absolute;top:14px;left:16px;width:30px;height:30px;border-radius:50%;background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.3);color:var(--gold);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+        .customer-card{background:var(--card);border-radius:15px;padding:18px 18px 18px 20px;border:1px solid rgba(255,255,255,0.05);position:relative;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.15);animation:slideIn 0.4s ease;}
+        .customer-card.first-in-queue{border-color:rgba(212,175,55,0.25);box-shadow:0 4px 20px rgba(212,175,55,0.1);}
+        @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .card-status-bar{position:absolute;top:0;right:0;width:4px;height:100%;}
+        .status-pending{background:var(--gold);}
+        .status-approved{background:var(--success);}
+        .customer-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+        .customer-info{display:flex;align-items:center;gap:12px;}
+        .customer-avatar{width:45px;height:45px;background:rgba(255,255,255,0.05);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--muted);flex-shrink:0;}
+        .customer-details h3{font-size:16px;margin-bottom:3px;}
+        .phone-row{display:flex;align-items:center;gap:6px;margin-bottom:12px;}
+        .phone-btn{display:inline-flex;align-items:center;gap:7px;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.2);border-radius:30px;padding:6px 14px;color:#cbd5e0;text-decoration:none;font-size:14px;font-weight:700;direction:ltr;transition:all 0.2s;}
+        .phone-btn i{color:var(--gold);font-size:13px;}
+        .no-phone{font-size:12px;color:var(--muted);font-style:italic;}
+        .status-badge{font-size:11px;padding:4px 10px;border-radius:6px;font-weight:700;white-space:nowrap;flex-shrink:0;}
+        .badge-pending{background:rgba(212,175,55,0.1);color:var(--gold);}
+        .badge-approved{background:rgba(40,167,69,0.1);color:var(--success);}
+        .btn{width:100%;padding:13px;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Cairo',sans-serif;transition:all 0.2s;}
+        .btn-call{background:var(--gold);color:#000;}
+        .btn-call:active{transform:scale(0.98);background:var(--gold-hover);}
+        .btn-done{background:transparent;color:var(--success);border:1px solid var(--success);}
+        .btn-done:active{transform:scale(0.98);background:rgba(40,167,69,0.1);}
+        .btn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important;}
+        .empty-state{text-align:center;padding:40px 20px;color:var(--muted);background:var(--card);border-radius:15px;border:1px dashed rgba(255,255,255,0.1);}
+        .empty-state i{font-size:40px;margin-bottom:15px;color:rgba(255,255,255,0.1);display:block;}
+        .new-banner{display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#d4af37,#f3cf55);color:#000;font-size:16px;font-weight:800;padding:12px 25px;border-radius:50px;z-index:500;box-shadow:0 5px 25px rgba(212,175,55,0.5);white-space:nowrap;}
+        @keyframes bannerPop{from{transform:translateX(-50%) scale(0.7);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+        .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;backdrop-filter:blur(3px);}
+        .drawer-overlay.show{display:block;}
+        .drawer{position:fixed;bottom:0;left:0;right:0;background:#13161e;border-radius:28px 28px 0 0;border-top:1px solid rgba(212,175,55,0.15);z-index:300;max-height:80vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);box-shadow:0 -10px 40px rgba(0,0,0,0.5);}
+        .drawer.open{transform:translateY(0);}
+        .drawer-handle{width:40px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:14px auto 0;cursor:pointer;flex-shrink:0;}
+        .drawer-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 12px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;}
+        .drawer-header h3{font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px;}
+        .drawer-header h3 i{color:var(--gold);}
+        .drawer-close{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.07);border:none;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+        .drawer-body{overflow-y:auto;padding:16px;flex:1;display:flex;flex-direction:column;gap:12px;}
+        .queue-row{background:var(--card);border-radius:14px;padding:14px 16px;border:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:14px;}
+        .queue-row.first{border-color:rgba(212,175,55,0.3);background:rgba(212,175,55,0.05);}
+        .qr-num{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.25);color:var(--gold);}
+        .qr-num.first-num{background:var(--gold);color:#000;border:none;}
+        .qr-info{flex:1;min-width:0;}
+        .qr-info h4{font-size:15px;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .qr-phone{font-size:12px;color:var(--muted);direction:ltr;display:inline-flex;align-items:center;gap:5px;text-decoration:none;}
+        .qr-phone i{color:var(--gold);font-size:11px;}
+        .qr-time{font-size:11px;color:var(--muted);flex-shrink:0;}
+        .drawer-empty{text-align:center;padding:40px 20px;color:var(--muted);}
+        .drawer-empty i{font-size:36px;display:block;margin-bottom:12px;opacity:0.3;}
     </style>
 </head>
 <body>
 
-    <header class="top-navbar">
-        <div class="logo-area">
-            <i class="fa-solid fa-scissors"></i>
-            <h2>صالون <span>محمد عدنان</span></h2>
+<header class="top-navbar">
+    <div class="logo-area">
+        <i class="fa-solid fa-scissors"></i>
+        <h2>صالون <span>محمد عدنان</span></h2>
+    </div>
+    <div class="clock-area" id="clock">00:00</div>
+</header>
+
+<div class="new-banner" id="newBanner">🔔 زبون جديد حجز!</div>
+
+<div class="container">
+    <div class="notif-bar" id="notifBar">
+        <div class="notif-bar-text">
+            <i class="fas fa-bell"></i>
+            <span id="notifText">فعّل الإشعارات لتنبيهك عند كل حجز جديد</span>
         </div>
-        <div class="clock-area" id="clock">00:00</div>
-    </header>
-
-    <div class="new-banner" id="newBanner">🔔 زبون جديد حجز!</div>
-
-    <div class="container">
-
-        <div class="notif-bar" id="notifBar">
-            <div class="notif-bar-text">
-                <i class="fas fa-bell"></i>
-                <span id="notifText">فعّل الإشعارات لتنبيهك عند كل حجز جديد</span>
-            </div>
-            <button class="notif-btn" id="notifBtn" onclick="requestNotifPermission()">تفعيل</button>
-        </div>
-
-        <div class="toggle-card">
-            <div class="toggle-info">
-                <div class="toggle-icon" id="toggleIcon"><i class="fa-solid fa-store"></i></div>
-                <div class="toggle-label">
-                    <h4>حالة الصالون</h4>
-                    <h3 id="toggleLabel">جاري التحميل...</h3>
-                </div>
-            </div>
-            <button class="toggle-btn" id="toggleBtn" onclick="toggleStatus()"></button>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card clickable" onclick="openDrawer()">
-                <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
-                <div class="stat-info">
-                    <h4>في الانتظار</h4>
-                    <h2 id="pendingCount">0</h2>
-                </div>
-                <div class="tap-hint">اضغط لعرض القائمة ▼</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fa-solid fa-chair"></i></div>
-                <div class="stat-info"><h4>على الكرسي</h4><h2 id="approvedCount">0</h2></div>
-            </div>
-        </div>
-
-        <h3 class="section-title"><i class="fa-regular fa-clock"></i> الزبائن الحاليين</h3>
-        <div class="queue-grid" id="queueList"></div>
+        <button class="notif-btn" id="notifBtn" onclick="requestNotifPermission()">تفعيل</button>
     </div>
 
-    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-    <div class="drawer" id="drawer">
-        <div class="drawer-handle" onclick="closeDrawer()"></div>
-        <div class="drawer-header">
-            <h3><i class="fa-solid fa-list-ol"></i> قائمة الانتظار</h3>
-            <button class="drawer-close" onclick="closeDrawer()"><i class="fas fa-times"></i></button>
+    <div class="toggle-card">
+        <div class="toggle-info">
+            <div class="toggle-icon closed" id="toggleIcon"><i class="fa-solid fa-store"></i></div>
+            <div class="toggle-label">
+                <h4>حالة الصالون</h4>
+                <h3 class="closed" id="toggleLabel">جاري التحميل...</h3>
+            </div>
         </div>
-        <div class="drawer-body" id="drawerBody"></div>
+        <button class="toggle-btn closed" id="toggleBtn" onclick="toggleStatus()"></button>
     </div>
 
-    <script>
-        const SUPABASE_URL = 'https://hoskjuzkxrmzuarobofp.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhvc2tqdXpreHJtenVhcm9ib2ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NTI0OTQsImV4cCI6MjA5NjMyODQ5NH0.djwG-Oybxf3rKyxvLlrClAMkdjyMw-_vTMyGJmOO-30';
-        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <div class="stats-grid">
+        <div class="stat-card clickable" onclick="openDrawer()">
+            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="stat-info"><h4>في الانتظار</h4><h2 id="pendingCount">0</h2></div>
+            <div class="tap-hint">اضغط لعرض القائمة ▼</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-chair"></i></div>
+            <div class="stat-info"><h4>على الكرسي</h4><h2 id="approvedCount">0</h2></div>
+        </div>
+    </div>
 
-        // ══ المتغيرات العامة ══
-        let currentIsOpen = false;
-        let knownIds = new Set();
-        let firstFetchDone = false;
-        let cachedPending = [];
-        let swRegistration = null;
+    <h3 class="section-title"><i class="fa-regular fa-clock"></i> الزبائن الحاليين</h3>
+    <div class="queue-grid" id="queueList"></div>
+</div>
 
-        /* ══ Service Worker + الإشعارات ══ */
-        async function registerSW() {
-            if (!('serviceWorker' in navigator)) return;
-            try {
-                swRegistration = await navigator.serviceWorker.register('sw.js');
-                setInterval(() => {
-                    if (swRegistration && swRegistration.active) {
-                        swRegistration.active.postMessage({ type: 'KEEP_ALIVE' });
-                    }
-                }, 10000);
-            } catch(e) { console.warn('SW error:', e); }
-        }
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+    <div class="drawer-handle" onclick="closeDrawer()"></div>
+    <div class="drawer-header">
+        <h3><i class="fa-solid fa-list-ol"></i> قائمة الانتظار</h3>
+        <button class="drawer-close" onclick="closeDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+</div>
 
-        function checkNotifStatus() {
-            const bar = document.getElementById('notifBar');
-            const btn = document.getElementById('notifBtn');
-            const txt = document.getElementById('notifText');
+<script>
+const SUPABASE_URL = 'https://hoskjuzkxrmzuarobofp.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhvc2tqdXpreHJtenVhcm9ib2ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NTI0OTQsImV4cCI6MjA5NjMyODQ5NH0.djwG-Oybxf3rKyxvLlrClAMkdjyMw-_vTMyGJmOO-30';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            if (!('Notification' in window)) {
-                bar.classList.add('hidden'); return;
-            }
-            if (Notification.permission === 'granted') {
-                bar.className = 'notif-bar notif-granted';
-                txt.innerHTML = '<i class="fas fa-check-circle"></i> الإشعارات مفعّلة — تصلك حتى لو الشاشة مقفلة ✅';
-                btn.style.display = 'none';
-            } else if (Notification.permission === 'denied') {
-                bar.classList.add('hidden');
-            } else {
-                bar.className = 'notif-bar';
-            }
-        }
+// ══ المتغيرات الكلية ══
+let currentIsOpen  = false;
+let knownIds       = new Set();  // IDs اللي شفناها — لكشف الجديد
+let firstFetchDone = false;      // أول جلب انتهى؟
+let cachedPending  = [];         // قائمة الانتظار
+let swReg          = null;
+let isFetching     = false;      // منع طلبين بنفس الوقت
+let bannerTimer    = null;       // منع تكرار البانر
 
-        async function requestNotifPermission() {
-            const permission = await Notification.requestPermission();
-            checkNotifStatus();
-            if (permission === 'granted') {
-                await registerSW();
-                if (swRegistration) {
-                    swRegistration.showNotification('✅ تم تفعيل الإشعارات', {
-                        body: 'ستصلك تنبيهات حتى لو الشاشة مقفلة',
-                        icon: 'cover.jpg',
-                        vibrate: [200, 100, 200]
-                    });
-                }
-            }
-        }
+// ══ Service Worker ══
+async function registerSW() {
+    if (!('serviceWorker' in navigator)) return;
+    try { swReg = await navigator.serviceWorker.register('sw.js'); }
+    catch(e) { swReg = null; } // sw.js مو موجود — مش مشكلة
+}
 
-        function sendBookingNotification(customerName) {
-            if (Notification.permission !== 'granted') return;
-            const uniqueTag = 'booking-' + Date.now();
-            if (swRegistration) {
-                swRegistration.showNotification('🔔 زبون جديد حجز!', {
-                    body: 'الاسم: ' + customerName,
-                    icon: 'cover.jpg',
-                    badge: 'cover.jpg',
-                    vibrate: [400, 100, 400, 100, 400, 100, 400],
-                    requireInteraction: true,
-                    tag: uniqueTag,
-                    data: { url: './admin.html' }
-                });
-            } else {
-                const notif = new Notification('🔔 زبون جديد حجز!', {
-                    body: 'الاسم: ' + customerName,
-                    icon: 'cover.jpg',
-                    requireInteraction: true,
-                    tag: uniqueTag
-                });
-                notif.onclick = () => { window.focus(); notif.close(); };
-            }
-        }
+// ══ الإشعارات ══
+function checkNotifStatus() {
+    const bar = document.getElementById('notifBar');
+    const btn = document.getElementById('notifBtn');
+    const txt = document.getElementById('notifText');
+    if (!('Notification' in window)) { bar.classList.add('hidden'); return; }
+    if (Notification.permission === 'granted') {
+        bar.className = 'notif-bar notif-granted';
+        txt.innerHTML = '<i class="fas fa-check-circle"></i> الإشعارات مفعّلة ✅';
+        btn.style.display = 'none';
+    } else if (Notification.permission === 'denied') {
+        bar.classList.add('hidden');
+    }
+}
 
-        /* ══ صوت التنبيه ══ */
-        function playNewBookingSound() {
-            try {
-                const audio = new Audio('mhma.mp3');
-                audio.volume = 1.0;
-                audio.play().catch(e => console.warn('Audio play blocked:', e));
-                if (navigator.vibrate) {
-                    navigator.vibrate([400, 100, 400, 100, 400, 100, 400]);
-                }
-            } catch(e) { console.warn('Sound error:', e); }
-        }
+async function requestNotifPermission() {
+    const p = await Notification.requestPermission();
+    checkNotifStatus();
+    if (p === 'granted') {
+        await registerSW();
+        fireNotif('✅ تم تفعيل الإشعارات', 'ستصلك تنبيهات عند كل حجز جديد');
+    }
+}
 
-        /* ══ الساعة ══ */
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').innerText =
-                now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
-        }
-        updateClock();
-        setInterval(updateClock, 1000);
+// إشعار واحد فقط — tag ثابت يمنع التكرار
+function fireNotif(title, body) {
+    if (Notification.permission !== 'granted') return;
+    const opts = { body, icon: 'cover.jpg', tag: 'salon-alert', renotify: true, requireInteraction: true, vibrate: [300,100,300] };
+    if (swReg && swReg.active) {
+        swReg.showNotification(title, opts);
+    } else {
+        const n = new Notification(title, opts);
+        n.onclick = () => { window.focus(); n.close(); };
+    }
+}
 
-        /* ══ Toggle الصالون ══ */
-        function renderToggle(isOpen) {
-            currentIsOpen = isOpen;
-            const icon  = document.getElementById('toggleIcon');
-            const label = document.getElementById('toggleLabel');
-            const btn   = document.getElementById('toggleBtn');
-            if (isOpen) {
-                icon.className  = 'toggle-icon open';
-                icon.innerHTML  = '<i class="fa-solid fa-door-open"></i>';
-                label.className = 'open'; label.innerText = 'مفتوح الآن';
-                btn.className   = 'toggle-btn open';
-            } else {
-                icon.className  = 'toggle-icon closed';
-                icon.innerHTML  = '<i class="fa-solid fa-door-closed"></i>';
-                label.className = 'closed'; label.innerText = 'مغلق الآن';
-                btn.className   = 'toggle-btn closed';
-            }
-        }
+// ══ الصوت ══
+function playSound() {
+    try { new Audio('mhma.mp3').play().catch(()=>{}); } catch(e) {}
+    if (navigator.vibrate) navigator.vibrate([400,100,400,100,400]);
+}
 
-        async function fetchStatus() {
-            try {
-                const { data, error } = await db.from('salon_status').select('is_open').eq('id', 1).single();
-                if (!error && data) renderToggle(data.is_open);
-            } catch(e) { console.warn('fetchStatus error:', e); }
-        }
+// ══ الساعة ══
+function updateClock() {
+    document.getElementById('clock').innerText =
+        new Date().toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'});
+}
+updateClock();
+setInterval(updateClock, 1000);
 
-        async function toggleStatus() {
-            const newStatus = !currentIsOpen;
-            renderToggle(newStatus);
-            try {
-                const { error } = await db.from('salon_status').update({ is_open: newStatus }).eq('id', 1);
-                if (error) { alert('خطأ: ' + error.message); renderToggle(!newStatus); }
-            } catch(e) { alert('خطأ في الاتصال'); renderToggle(!newStatus); }
-        }
+// ══ Toggle ══
+function renderToggle(isOpen) {
+    currentIsOpen = isOpen;
+    const icon  = document.getElementById('toggleIcon');
+    const label = document.getElementById('toggleLabel');
+    const btn   = document.getElementById('toggleBtn');
+    if (isOpen) {
+        icon.className  = 'toggle-icon open';
+        icon.innerHTML  = '<i class="fa-solid fa-door-open"></i>';
+        label.className = 'open'; label.innerText = 'مفتوح الآن';
+        btn.className   = 'toggle-btn open';
+    } else {
+        icon.className  = 'toggle-icon closed';
+        icon.innerHTML  = '<i class="fa-solid fa-door-closed"></i>';
+        label.className = 'closed'; label.innerText = 'مغلق الآن';
+        btn.className   = 'toggle-btn closed';
+    }
+}
+async function fetchStatus() {
+    try {
+        const {data,error} = await db.from('salon_status').select('is_open').eq('id',1).single();
+        if (!error && data) renderToggle(data.is_open);
+    } catch(e) {}
+}
+async function toggleStatus() {
+    const n = !currentIsOpen;
+    renderToggle(n);
+    try {
+        const {error} = await db.from('salon_status').update({is_open:n}).eq('id',1);
+        if (error) renderToggle(!n);
+    } catch(e) { renderToggle(!n); }
+}
 
-        /* ══ Banner ══ */
-        function showNewBanner() {
-            const b = document.getElementById('newBanner');
-            b.style.display = 'block';
-            b.style.animation = 'none';
-            setTimeout(() => { b.style.animation = 'bannerPop 0.4s ease'; }, 10);
-            setTimeout(() => { b.style.display = 'none'; }, 4000);
-        }
+// ══ البانر — مرة وحدة ══
+function showBanner() {
+    if (bannerTimer) { clearTimeout(bannerTimer); }
+    const b = document.getElementById('newBanner');
+    b.style.animation = 'none';
+    b.style.display = 'block';
+    requestAnimationFrame(() => { b.style.animation = 'bannerPop 0.4s ease'; });
+    bannerTimer = setTimeout(() => { b.style.display = 'none'; bannerTimer = null; }, 4000);
+}
 
-        /* ══ Drawer ══ */
-        function openDrawer() {
-            renderDrawer();
-            document.getElementById('drawerOverlay').classList.add('show');
-            document.getElementById('drawer').classList.add('open');
-        }
-        function closeDrawer() {
-            document.getElementById('drawerOverlay').classList.remove('show');
-            document.getElementById('drawer').classList.remove('open');
-        }
-        function renderDrawer() {
-            const body = document.getElementById('drawerBody');
-            body.innerHTML = '';
-            if (cachedPending.length === 0) {
-                body.innerHTML = '<div class="drawer-empty"><i class="fa-solid fa-couch"></i><p>لا يوجد زبائن في الانتظار</p></div>';
-                return;
-            }
-            cachedPending.forEach((c, i) => {
-                const isFirst = i === 0;
-                const timeStr = new Date(c.created_at).toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
-                const row = document.createElement('div');
-                row.className = 'queue-row' + (isFirst ? ' first' : '');
-                row.innerHTML =
-                    '<div class="qr-num' + (isFirst ? ' first-num' : '') + '">' + (i+1) + '</div>' +
-                    '<div class="qr-info">' +
-                        '<h4>' + c.customer_name + (isFirst ? ' <span style="font-size:11px;color:var(--gold);">← التالي</span>' : '') + '</h4>' +
-                        (c.phone
-                            ? '<a class="qr-phone" href="tel:' + c.phone + '"><i class="fas fa-phone-alt"></i> ' + c.phone + '</a>'
-                            : '<span class="qr-phone">لا يوجد رقم</span>') +
-                    '</div>' +
-                    '<div class="qr-time">' + timeStr + '</div>';
-                body.appendChild(row);
-            });
-        }
+// ══ Drawer ══
+function openDrawer()  { renderDrawer(); document.getElementById('drawerOverlay').classList.add('show'); document.getElementById('drawer').classList.add('open'); }
+function closeDrawer() { document.getElementById('drawerOverlay').classList.remove('show'); document.getElementById('drawer').classList.remove('open'); }
+function renderDrawer() {
+    const body = document.getElementById('drawerBody');
+    body.innerHTML = '';
+    if (!cachedPending.length) {
+        body.innerHTML = '<div class="drawer-empty"><i class="fa-solid fa-couch"></i><p>لا يوجد زبائن في الانتظار</p></div>';
+        return;
+    }
+    cachedPending.forEach((c,i) => {
+        const first = i===0;
+        const t = new Date(c.created_at).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'});
+        const row = document.createElement('div');
+        row.className = 'queue-row'+(first?' first':'');
+        row.innerHTML =
+            '<div class="qr-num'+(first?' first-num':'')+'">'+( i+1)+'</div>'+
+            '<div class="qr-info">'+
+                '<h4>'+esc(c.customer_name)+(first?' <span style="font-size:11px;color:var(--gold);">← التالي</span>':'')+'</h4>'+
+                (c.phone ? '<a class="qr-phone" href="tel:'+esc(c.phone)+'"><i class="fas fa-phone-alt"></i> '+esc(c.phone)+'</a>'
+                         : '<span class="qr-phone">لا يوجد رقم</span>')+
+            '</div>'+
+            '<div class="qr-time">'+t+'</div>';
+        body.appendChild(row);
+    });
+}
 
-        /* ══ Queue الرئيسي ══ */
-        async function fetchQueue() {
-            try {
-                const { data, error } = await db
-                    .from('appointments')
-                    .select('*')
-                    .in('status', ['pending', 'approved'])
-                    .order('id', { ascending: true });
+// ══ جلب الزبائن — القلب ══
+async function fetchQueue() {
+    if (isFetching) return;
+    isFetching = true;
+    try {
+        const {data,error} = await db
+            .from('appointments')
+            .select('*')
+            .in('status',['pending','approved'])
+            .order('id',{ascending:true});
 
-                if (error) {
-                    console.error('fetchQueue error:', error);
-                    return;
-                }
+        if (error) { console.error('DB error:',error.message||error); isFetching=false; return; }
 
-                const rows = data || [];
-                const currentIds = new Set(rows.map(c => c.id));
+        const rows = data || [];
 
-                // كشف الزبائن الجدد
-                if (firstFetchDone) {
-                    const newCustomers = rows.filter(c => !knownIds.has(c.id) && c.status === 'pending');
-                    if (newCustomers.length > 0) {
-                        playNewBookingSound();
-                        showNewBanner();
-                        newCustomers.forEach(c => sendBookingNotification(c.customer_name));
-                    }
-                }
-
-                knownIds = currentIds;
-                firstFetchDone = true;
-
-                cachedPending = rows.filter(c => c.status === 'pending');
-                const approved = rows.filter(c => c.status === 'approved');
-                const sorted   = [...approved, ...cachedPending];
-
-                document.getElementById('pendingCount').innerText  = cachedPending.length;
-                document.getElementById('approvedCount').innerText = approved.length;
-
-                if (document.getElementById('drawer').classList.contains('open')) renderDrawer();
-
-                const listDiv = document.getElementById('queueList');
-                listDiv.innerHTML = '';
-
-                if (sorted.length === 0) {
-                    listDiv.innerHTML =
-                        '<div class="empty-state">' +
-                        '<i class="fa-solid fa-mug-hot"></i>' +
-                        '<h3>لا يوجد زبائن حالياً</h3>' +
-                        '<p style="font-size:13px;margin-top:5px;">شارك رابط الحجز مع زبائنك!</p>' +
-                        '</div>';
-                    return;
-                }
-
-                sorted.forEach((c, index) => {
-                    const isPending = c.status === 'pending';
-                    const pendingIndex = cachedPending.findIndex(x => x.id === c.id);
-                    const isFirst = isPending && pendingIndex === 0;
-                    const timeStr = new Date(c.created_at).toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
-                    const phoneHtml = c.phone
-                        ? '<a class="phone-btn" href="tel:' + c.phone + '"><i class="fas fa-phone-alt"></i>' + c.phone + '</a>'
-                        : '<span class="no-phone">لا يوجد رقم</span>';
-
-                    const card = document.createElement('div');
-                    card.className = 'customer-card' + (isFirst ? ' first-in-queue' : '');
-                    card.innerHTML =
-                        '<div class="card-status-bar ' + (isPending ? 'status-pending' : 'status-approved') + '"></div>' +
-                        (isPending ? '<div class="turn-badge">' + (pendingIndex + 1) + '</div>' : '') +
-                        '<div class="customer-header">' +
-                            '<div class="customer-info">' +
-                                '<div class="customer-avatar"><i class="fa-solid fa-user"></i></div>' +
-                                '<div class="customer-details">' +
-                                    '<h3>' + c.customer_name + '</h3>' +
-                                    '<span style="font-size:11px;color:var(--muted);"><i class="fa-regular fa-clock"></i> ' + timeStr + '</span>' +
-                                '</div>' +
-                            '</div>' +
-                            '<span class="status-badge ' + (isPending ? 'badge-pending' : 'badge-approved') + '">' +
-                                (isPending ? 'ينتظر' : '✂️ يحلق الآن') +
-                            '</span>' +
-                        '</div>' +
-                        '<div class="phone-row">' + phoneHtml + '</div>' +
-                        '<div>' +
-                            (isPending
-                                ? '<button class="btn btn-call" onclick="updateStatus(' + c.id + ',\'approved\')"><i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي</button>'
-                                : '<button class="btn btn-done" onclick="updateStatus(' + c.id + ',\'completed\')"><i class="fa-solid fa-check-double"></i> إنهاء الخدمة</button>') +
-                        '</div>';
-                    listDiv.appendChild(card);
-                });
-
-            } catch(e) {
-                console.error('fetchQueue exception:', e);
+        // ── كشف الجدد فقط بعد أول تحميل ──
+        if (firstFetchDone) {
+            const newOnes = rows.filter(c => !knownIds.has(c.id) && c.status==='pending');
+            if (newOnes.length > 0) {
+                playSound();
+                showBanner();
+                fireNotif('🔔 زبون جديد حجز!', 'الاسم: '+newOnes[0].customer_name);
             }
         }
 
-        async function updateStatus(id, newStatus) {
-            try {
-                const { error } = await db.from('appointments').update({ status: newStatus }).eq('id', id);
-                if (error) { alert('خطأ: ' + error.message); return; }
-                fetchQueue();
-            } catch(e) { alert('خطأ في الاتصال'); }
-        }
+        // تحديث الـ IDs المعروفة
+        knownIds = new Set(rows.map(c => c.id));
+        firstFetchDone = true;
 
-        // ══ تهيئة ══
-        registerSW();
-        checkNotifStatus();
-        fetchStatus();
-        fetchQueue();
-        setInterval(fetchQueue, 2000);
-        setInterval(fetchStatus, 5000);
-    </script>
+        cachedPending = rows.filter(c => c.status==='pending');
+        const approved = rows.filter(c => c.status==='approved');
+
+        document.getElementById('pendingCount').innerText  = cachedPending.length;
+        document.getElementById('approvedCount').innerText = approved.length;
+
+        if (document.getElementById('drawer').classList.contains('open')) renderDrawer();
+        renderCards([...approved,...cachedPending]);
+
+    } catch(e) { console.error('fetchQueue:',e); }
+    isFetching = false;
+}
+
+function renderCards(sorted) {
+    const div = document.getElementById('queueList');
+    div.innerHTML = '';
+    if (!sorted.length) {
+        div.innerHTML = '<div class="empty-state"><i class="fa-solid fa-mug-hot"></i><h3>لا يوجد زبائن حالياً</h3><p style="font-size:13px;margin-top:5px;">شارك رابط الحجز مع زبائنك!</p></div>';
+        return;
+    }
+    sorted.forEach(c => {
+        const isPending  = c.status==='pending';
+        const pidx       = cachedPending.findIndex(x=>x.id===c.id);
+        const isFirst    = isPending && pidx===0;
+        const t          = new Date(c.created_at).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'});
+        const phoneHtml  = c.phone
+            ? '<a class="phone-btn" href="tel:'+esc(c.phone)+'"><i class="fas fa-phone-alt"></i>'+esc(c.phone)+'</a>'
+            : '<span class="no-phone">لا يوجد رقم</span>';
+        const card = document.createElement('div');
+        card.className = 'customer-card'+(isFirst?' first-in-queue':'');
+        card.innerHTML =
+            '<div class="card-status-bar '+(isPending?'status-pending':'status-approved')+'"></div>'+
+            (isPending?'<div class="turn-badge">'+(pidx+1)+'</div>':'')+
+            '<div class="customer-header">'+
+                '<div class="customer-info">'+
+                    '<div class="customer-avatar"><i class="fa-solid fa-user"></i></div>'+
+                    '<div class="customer-details">'+
+                        '<h3>'+esc(c.customer_name)+'</h3>'+
+                        '<span style="font-size:11px;color:var(--muted);"><i class="fa-regular fa-clock"></i> '+t+'</span>'+
+                    '</div>'+
+                '</div>'+
+                '<span class="status-badge '+(isPending?'badge-pending':'badge-approved')+'">'+
+                    (isPending?'ينتظر':'✂️ يحلق الآن')+
+                '</span>'+
+            '</div>'+
+            '<div class="phone-row">'+phoneHtml+'</div>'+
+            '<div>'+
+                (isPending
+                    ? '<button class="btn btn-call" onclick="doUpdate('+c.id+',\'approved\',this)"><i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي</button>'
+                    : '<button class="btn btn-done" onclick="doUpdate('+c.id+',\'completed\',this)"><i class="fa-solid fa-check-double"></i> إنهاء الخدمة</button>')+
+            '</div>';
+        div.appendChild(card);
+    });
+}
+
+// ══ تحديث — مع حماية من الضغط المزدوج ══
+async function doUpdate(id, newStatus, btn) {
+    if (btn.disabled) return;
+    btn.disabled = true;
+    try {
+        const {error} = await db.from('appointments').update({status:newStatus}).eq('id',id);
+        if (error) { alert('خطأ: '+error.message); btn.disabled=false; return; }
+        await fetchQueue();
+    } catch(e) { alert('خطأ في الاتصال'); btn.disabled=false; }
+}
+
+// ══ مساعد XSS ══
+function esc(s){ return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''; }
+
+// ══ تهيئة ══
+registerSW();
+checkNotifStatus();
+fetchStatus();
+fetchQueue();
+setInterval(fetchQueue,  3000);
+setInterval(fetchStatus, 8000);
+</script>
 </body>
 </html>
