@@ -78,8 +78,6 @@
         .btn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important;}
         .empty-state{text-align:center;padding:40px 20px;color:var(--muted);background:var(--card);border-radius:15px;border:1px dashed rgba(255,255,255,0.1);}
         .empty-state i{font-size:40px;margin-bottom:15px;color:rgba(255,255,255,0.1);display:block;}
-        .new-banner{display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#d4af37,#f3cf55);color:#000;font-size:16px;font-weight:800;padding:12px 25px;border-radius:50px;z-index:500;box-shadow:0 5px 25px rgba(212,175,55,0.5);white-space:nowrap;}
-        @keyframes bannerPop{from{transform:translateX(-50%) scale(0.7);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
         .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;backdrop-filter:blur(3px);}
         .drawer-overlay.show{display:block;}
         .drawer{position:fixed;bottom:0;left:0;right:0;background:#13161e;border-radius:28px 28px 0 0;border-top:1px solid rgba(212,175,55,0.15);z-index:300;max-height:80vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);box-shadow:0 -10px 40px rgba(0,0,0,0.5);}
@@ -101,6 +99,47 @@
         .qr-time{font-size:11px;color:var(--muted);flex-shrink:0;}
         .drawer-empty{text-align:center;padding:40px 20px;color:var(--muted);}
         .drawer-empty i{font-size:36px;display:block;margin-bottom:12px;opacity:0.3;}
+
+        .system-notification {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #1a1d24;
+            color: #fff;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            z-index: 9999;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.7);
+            animation: slideFromTop 0.4s ease, slideToTop 0.4s ease 4.6s;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(212,175,55,0.15);
+        }
+        .system-notification-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #d4af37, #f3cf55);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-size: 22px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(212,175,55,0.4);
+            animation: scaleIn 0.4s ease;
+        }
+        .system-notification-content { flex: 1; min-width: 0; }
+        .system-notification-content h4 { margin: 0; font-size: 15px; color: #fff; display: flex; align-items: center; gap: 6px; }
+        .system-notification-content p { margin: 4px 0 0; font-size: 13px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .system-notification-close { background: none; border: none; color: #aaa; font-size: 18px; cursor: pointer; padding: 6px; flex-shrink: 0; opacity: 0.6; transition: opacity 0.2s; }
+        .system-notification-close:active { opacity: 1; }
+        @keyframes slideFromTop { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideToTop { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-100%); opacity: 0; } }
+        @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -112,8 +151,6 @@
     </div>
     <div class="clock-area" id="clock">00:00</div>
 </header>
-
-<div class="new-banner" id="newBanner">🔔 زبون جديد حجز!</div>
 
 <div class="container">
     <div class="notif-bar" id="notifBar">
@@ -172,7 +209,6 @@ let firstFetchDone = false;
 let cachedPending  = [];
 let swReg          = null;
 let isFetching     = false;
-let bannerTimer    = null;
 let lastNotifId    = null;
 
 async function registerSW() {
@@ -204,14 +240,29 @@ async function requestNotifPermission() {
     }
 }
 
+// ===== ✅ fireNotif المُحدَّثة =====
 function fireNotif(title, body) {
     if (Notification.permission !== 'granted') return;
-    const opts = { body, icon: 'cover.jpg', tag: 'salon-alert', renotify: true, requireInteraction: true, vibrate: [300,100,300] };
+    
+    const opts = { 
+        body, 
+        icon: 'cover.jpg',
+        badge: 'cover.jpg',
+        tag: 'salon-new-booking',
+        renotify: true,
+        requireInteraction: true,
+        vibrate: [500, 100, 500, 100, 500],
+        actions: [
+            { action: 'open', title: 'افتح التطبيق' },
+            { action: 'close', title: 'إغلق' }
+        ],
+        data: { url: window.location.href }
+    };
+    
     if (swReg && swReg.active) {
         swReg.showNotification(title, opts);
     } else {
-        const n = new Notification(title, opts);
-        n.onclick = () => { window.focus(); n.close(); };
+        new Notification(title, opts);
     }
 }
 
@@ -220,13 +271,31 @@ function playSound() {
     if (navigator.vibrate) navigator.vibrate([400,100,400,100,400]);
 }
 
-function showBanner() {
-    if (bannerTimer) { clearTimeout(bannerTimer); }
-    const b = document.getElementById('newBanner');
-    b.style.animation = 'none';
-    b.style.display = 'block';
-    requestAnimationFrame(() => { b.style.animation = 'bannerPop 0.4s ease'; });
-    bannerTimer = setTimeout(() => { b.style.display = 'none'; bannerTimer = null; }, 4000);
+function showSystemNotification(customerName, phone) {
+    const oldNotif = document.querySelector('.system-notification');
+    if (oldNotif) oldNotif.remove();
+    
+    const notif = document.createElement('div');
+    notif.className = 'system-notification';
+    notif.innerHTML = `
+        <div class="system-notification-avatar">
+            <i class="fa-solid fa-bell"></i>
+        </div>
+        <div class="system-notification-content">
+            <h4>🔔 حجز جديد!</h4>
+            <p>${customerName}</p>
+        </div>
+        <button class="system-notification-close" onclick="this.parentElement.remove()">
+            <i class="fa-solid fa-times"></i>
+        </button>
+    `;
+    
+    document.body.insertBefore(notif, document.body.firstChild);
+    playSound();
+    
+    setTimeout(() => {
+        if (notif.parentElement) notif.remove();
+    }, 5000);
 }
 
 function updateClock() {
@@ -302,8 +371,7 @@ async function fetchQueue() {
             const newOnes = rows.filter(c => !knownIds.has(c.id) && c.status==='pending');
             if (newOnes.length > 0 && lastNotifId !== newOnes[0].id) {
                 lastNotifId = newOnes[0].id;
-                playSound();
-                showBanner();
+                showSystemNotification(newOnes[0].customer_name, newOnes[0].phone);
                 fireNotif('🔔 زبون جديد حجز!', 'الاسم: '+newOnes[0].customer_name);
             }
         }
@@ -357,32 +425,19 @@ async function doUpdate(id, newStatus, btn) {
 
 function esc(s){ return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''; }
 
-// ══ Real-time Listener — تحديث فوري ══
 async function setupRealtime() {
     try {
         db.channel('appointments-changes')
             .on('postgres_changes',
                 {event: 'INSERT', schema: 'public', table: 'appointments'},
-                (payload) => {
-                    console.log('📡 حجز جديد!');
-                    fetchQueue();
-                }
+                (payload) => { fetchQueue(); }
             )
             .on('postgres_changes',
                 {event: 'UPDATE', schema: 'public', table: 'appointments'},
-                (payload) => {
-                    console.log('🔄 تحديث حجز');
-                    fetchQueue();
-                }
+                (payload) => { fetchQueue(); }
             )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log('✅ تحديث فوري فعّال');
-                }
-            });
-    } catch(e) {
-        console.log('Real-time ما اشتغل، بستخدم Polling');
-    }
+            .subscribe();
+    } catch(e) {}
 }
 
 registerSW();
@@ -391,7 +446,6 @@ fetchStatus();
 fetchQueue();
 setupRealtime();
 
-// Polling كـ Backup — كل 3 ثواني
 setInterval(fetchQueue, 3000);
 setInterval(fetchStatus, 8000);
 </script>
