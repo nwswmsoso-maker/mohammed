@@ -12,23 +12,40 @@ self.addEventListener('push', e => {
             body: data.body || 'حجز زبون جديد',
             icon: 'cover.jpg',
             badge: 'cover.jpg',
-            vibrate: [400, 100, 400, 100, 400, 100, 400],
+            vibrate: [500, 100, 500, 100, 500],
             requireInteraction: true,
-            tag: 'booking-' + Date.now()
+            tag: 'salon-new-booking',
+            renotify: true,
+            actions: [
+                { action: 'open', title: 'افتح التطبيق' },
+                { action: 'close', title: 'إغلق' }
+            ],
+            data: data.url ? { url: data.url } : {}
         })
     );
 });
 
 self.addEventListener('notificationclick', e => {
     e.notification.close();
+
+    // إذا ضغط "إغلق" — لا تفتح شي
+    if (e.action === 'close') return;
+
+    // إذا ضغط "افتح التطبيق" أو ضغط على الإشعار مباشرة
+    const targetUrl = (e.notification.data && e.notification.data.url)
+        ? e.notification.data.url
+        : './';
+
     e.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+            // ابحث عن تاب مفتوح
             for (const client of list) {
-                if (client.url.includes('admin') && 'focus' in client) {
+                if ('focus' in client) {
                     return client.focus();
                 }
             }
-            return clients.openWindow('./admin.html');
+            // افتح تاب جديد
+            return clients.openWindow(targetUrl);
         })
     );
 });
