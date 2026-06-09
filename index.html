@@ -431,7 +431,7 @@ async function setupRealtime() {
             )
             .on('postgres_changes',
                 { event: 'UPDATE', schema: 'public', table: 'salon_status' },
-                (payload) => renderToggle(payload.new.is_open)
+                () => fetchStatus()
             )
             .subscribe((status) => {
                 if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
