@@ -99,47 +99,14 @@
         .qr-time{font-size:11px;color:var(--muted);flex-shrink:0;}
         .drawer-empty{text-align:center;padding:40px 20px;color:var(--muted);}
         .drawer-empty i{font-size:36px;display:block;margin-bottom:12px;opacity:0.3;}
-
-        .system-notification {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #1a1d24;
-            color: #fff;
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            z-index: 9999;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.7);
-            animation: slideFromTop 0.4s ease, slideToTop 0.4s ease 4.6s;
-            font-weight: 600;
-            font-size: 14px;
-            border-bottom: 1px solid rgba(212,175,55,0.15);
-        }
-        .system-notification-avatar {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #d4af37, #f3cf55);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #000;
-            font-size: 22px;
-            flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(212,175,55,0.4);
-            animation: scaleIn 0.4s ease;
-        }
-        .system-notification-content { flex: 1; min-width: 0; }
-        .system-notification-content h4 { margin: 0; font-size: 15px; color: #fff; display: flex; align-items: center; gap: 6px; }
-        .system-notification-content p { margin: 4px 0 0; font-size: 13px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .system-notification-close { background: none; border: none; color: #aaa; font-size: 18px; cursor: pointer; padding: 6px; flex-shrink: 0; opacity: 0.6; transition: opacity 0.2s; }
-        .system-notification-close:active { opacity: 1; }
-        @keyframes slideFromTop { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes slideToTop { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-100%); opacity: 0; } }
-        @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .system-notification{position:fixed;top:0;left:0;right:0;background:#1a1d24;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:14px;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,0.7);animation:slideFromTop 0.4s ease,slideToTop 0.4s ease 4.6s;font-weight:600;font-size:14px;border-bottom:2px solid var(--gold);}
+        .system-notification-avatar{width:48px;height:48px;background:linear-gradient(135deg,#d4af37,#f3cf55);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-size:22px;flex-shrink:0;box-shadow:0 4px 12px rgba(212,175,55,0.4);}
+        .system-notification-content{flex:1;min-width:0;}
+        .system-notification-content h4{margin:0;font-size:15px;color:#fff;display:flex;align-items:center;gap:6px;font-weight:800;}
+        .system-notification-content p{margin:4px 0 0;font-size:13px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .system-notification-close{background:none;border:none;color:#aaa;font-size:18px;cursor:pointer;padding:6px;flex-shrink:0;}
+        @keyframes slideFromTop{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+        @keyframes slideToTop{from{transform:translateY(0);opacity:1}to{transform:translateY(-100%);opacity:0}}
     </style>
 </head>
 <body>
@@ -211,12 +178,14 @@ let swReg          = null;
 let isFetching     = false;
 let lastNotifId    = null;
 
+// ── Service Worker ──
 async function registerSW() {
     if (!('serviceWorker' in navigator)) return;
     try { swReg = await navigator.serviceWorker.register('sw.js'); }
     catch(e) { swReg = null; }
 }
 
+// ── إشعارات النظام ──
 function checkNotifStatus() {
     const bar = document.getElementById('notifBar');
     const btn = document.getElementById('notifBtn');
@@ -240,70 +209,53 @@ async function requestNotifPermission() {
     }
 }
 
-// ===== ✅ fireNotif المُحدَّثة =====
 function fireNotif(title, body) {
     if (Notification.permission !== 'granted') return;
-    
-    const opts = { 
-        body, 
-        icon: 'cover.jpg',
-        badge: 'cover.jpg',
-        tag: 'salon-new-booking',
-        renotify: true,
-        requireInteraction: true,
+    const opts = {
+        body, icon: 'cover.jpg', badge: 'cover.jpg',
+        tag: 'salon-new-booking', renotify: true, requireInteraction: true,
         vibrate: [500, 100, 500, 100, 500],
-        actions: [
-            { action: 'open', title: 'افتح التطبيق' },
-            { action: 'close', title: 'إغلق' }
-        ],
+        actions: [{ action: 'open', title: 'افتح التطبيق' }, { action: 'close', title: 'إغلق' }],
         data: { url: window.location.href }
     };
-    
-    if (swReg && swReg.active) {
-        swReg.showNotification(title, opts);
-    } else {
-        new Notification(title, opts);
-    }
+    if (swReg && swReg.active) { swReg.showNotification(title, opts); }
+    else { new Notification(title, opts); }
 }
 
 function playSound() {
     try { new Audio('mhma.mp3').play().catch(()=>{}); } catch(e) {}
-    if (navigator.vibrate) navigator.vibrate([400,100,400,100,400]);
+    if (navigator.vibrate) navigator.vibrate([400, 100, 400, 100, 400]);
 }
 
-function showSystemNotification(customerName, phone) {
-    const oldNotif = document.querySelector('.system-notification');
-    if (oldNotif) oldNotif.remove();
-    
+// ── إشعار داخل التطبيق (مثل WhatsApp) ──
+function showSystemNotification(customerName) {
+    const old = document.querySelector('.system-notification');
+    if (old) old.remove();
     const notif = document.createElement('div');
     notif.className = 'system-notification';
     notif.innerHTML = `
-        <div class="system-notification-avatar">
-            <i class="fa-solid fa-bell"></i>
-        </div>
+        <div class="system-notification-avatar"><i class="fa-solid fa-bell"></i></div>
         <div class="system-notification-content">
             <h4>🔔 حجز جديد!</h4>
             <p>${customerName}</p>
         </div>
         <button class="system-notification-close" onclick="this.parentElement.remove()">
             <i class="fa-solid fa-times"></i>
-        </button>
-    `;
-    
+        </button>`;
     document.body.insertBefore(notif, document.body.firstChild);
     playSound();
-    
-    setTimeout(() => {
-        if (notif.parentElement) notif.remove();
-    }, 5000);
+    setTimeout(() => { if (notif.parentElement) notif.remove(); }, 5000);
 }
 
+// ── ساعة ──
 function updateClock() {
-    document.getElementById('clock').innerText = new Date().toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('clock').innerText =
+        new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
 }
 updateClock();
 setInterval(updateClock, 1000);
 
+// ── حالة الصالون ──
 function renderToggle(isOpen) {
     currentIsOpen = isOpen;
     const icon  = document.getElementById('toggleIcon');
@@ -324,7 +276,7 @@ function renderToggle(isOpen) {
 
 async function fetchStatus() {
     try {
-        const {data,error} = await db.from('salon_status').select('is_open').eq('id',1).single();
+        const { data, error } = await db.from('salon_status').select('is_open').eq('id', 1).single();
         if (!error && data) renderToggle(data.is_open);
     } catch(e) {}
 }
@@ -333,13 +285,21 @@ async function toggleStatus() {
     const n = !currentIsOpen;
     renderToggle(n);
     try {
-        const {error} = await db.from('salon_status').update({is_open:n}).eq('id',1);
+        const { error } = await db.from('salon_status').update({ is_open: n }).eq('id', 1);
         if (error) renderToggle(!n);
     } catch(e) { renderToggle(!n); }
 }
 
-function openDrawer()  { renderDrawer(); document.getElementById('drawerOverlay').classList.add('show'); document.getElementById('drawer').classList.add('open'); }
-function closeDrawer() { document.getElementById('drawerOverlay').classList.remove('show'); document.getElementById('drawer').classList.remove('open'); }
+// ── Drawer ──
+function openDrawer()  {
+    renderDrawer();
+    document.getElementById('drawerOverlay').classList.add('show');
+    document.getElementById('drawer').classList.add('open');
+}
+function closeDrawer() {
+    document.getElementById('drawerOverlay').classList.remove('show');
+    document.getElementById('drawer').classList.remove('open');
+}
 
 function renderDrawer() {
     const body = document.getElementById('drawerBody');
@@ -348,48 +308,62 @@ function renderDrawer() {
         body.innerHTML = '<div class="drawer-empty"><i class="fa-solid fa-couch"></i><p>لا يوجد زبائن في الانتظار</p></div>';
         return;
     }
-    cachedPending.forEach((c,i) => {
-        const first = i===0;
-        const t = new Date(c.created_at).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'});
+    cachedPending.forEach((c, i) => {
+        const first = i === 0;
+        const t = new Date(c.created_at).toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
         const row = document.createElement('div');
-        row.className = 'queue-row'+(first?' first':'');
-        row.innerHTML = '<div class="qr-num'+(first?' first-num':'')+'">'+( i+1)+'</div><div class="qr-info"><h4>'+esc(c.customer_name)+(first?' <span style="font-size:11px;color:var(--gold);">← التالي</span>':'')+'</h4>'+(c.phone ? '<a class="qr-phone" href="tel:'+esc(c.phone)+'"><i class="fas fa-phone-alt"></i> '+esc(c.phone)+'</a>' : '<span class="qr-phone">لا يوجد رقم</span>')+'</div><div class="qr-time">'+t+'</div>';
+        row.className = 'queue-row' + (first ? ' first' : '');
+        row.innerHTML =
+            '<div class="qr-num' + (first ? ' first-num' : '') + '">' + (i + 1) + '</div>' +
+            '<div class="qr-info"><h4>' + esc(c.customer_name) +
+            (first ? ' <span style="font-size:11px;color:var(--gold);">← التالي</span>' : '') + '</h4>' +
+            (c.phone
+                ? '<a class="qr-phone" href="tel:' + esc(c.phone) + '"><i class="fas fa-phone-alt"></i> ' + esc(c.phone) + '</a>'
+                : '<span class="qr-phone">لا يوجد رقم</span>') +
+            '</div><div class="qr-time">' + t + '</div>';
         body.appendChild(row);
     });
 }
 
+// ── جلب الحجوزات ──
 async function fetchQueue() {
     if (isFetching) return;
     isFetching = true;
     try {
-        const {data,error} = await db.from('appointments').select('*').in('status',['pending','approved']).order('id',{ascending:true});
-        if (error) { console.error('DB error:',error.message); isFetching=false; return; }
+        const { data, error } = await db
+            .from('appointments')
+            .select('*')
+            .in('status', ['pending', 'approved'])
+            .order('id', { ascending: true });
+
+        if (error) { isFetching = false; return; }
 
         const rows = data || [];
 
         if (firstFetchDone) {
-            const newOnes = rows.filter(c => !knownIds.has(c.id) && c.status==='pending');
+            const newOnes = rows.filter(c => !knownIds.has(c.id) && c.status === 'pending');
             if (newOnes.length > 0 && lastNotifId !== newOnes[0].id) {
                 lastNotifId = newOnes[0].id;
-                showSystemNotification(newOnes[0].customer_name, newOnes[0].phone);
-                fireNotif('🔔 زبون جديد حجز!', 'الاسم: '+newOnes[0].customer_name);
+                showSystemNotification(newOnes[0].customer_name);
+                fireNotif('🔔 زبون جديد حجز!', 'الاسم: ' + newOnes[0].customer_name);
             }
         }
 
-        knownIds = new Set(rows.map(c => c.id));
+        knownIds       = new Set(rows.map(c => c.id));
         firstFetchDone = true;
-        cachedPending = rows.filter(c => c.status==='pending');
-        const approved = rows.filter(c => c.status==='approved');
+        cachedPending  = rows.filter(c => c.status === 'pending');
+        const approved = rows.filter(c => c.status === 'approved');
 
-        document.getElementById('pendingCount').innerText = cachedPending.length;
+        document.getElementById('pendingCount').innerText  = cachedPending.length;
         document.getElementById('approvedCount').innerText = approved.length;
 
         if (document.getElementById('drawer').classList.contains('open')) renderDrawer();
-        renderCards([...approved,...cachedPending]);
-    } catch(e) { console.error('fetchQueue:',e); }
+        renderCards([...approved, ...cachedPending]);
+    } catch(e) {}
     isFetching = false;
 }
 
+// ── رسم الكروت ──
 function renderCards(sorted) {
     const div = document.getElementById('queueList');
     div.innerHTML = '';
@@ -398,17 +372,29 @@ function renderCards(sorted) {
         return;
     }
     sorted.forEach(c => {
-        const isPending = c.status==='pending';
-        const pidx = cachedPending.findIndex(x=>x.id===c.id);
-        const isFirst = isPending && pidx===0;
-        const t = new Date(c.created_at).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'});
-        const phoneHtml = c.phone ? '<a class="phone-btn" href="tel:'+esc(c.phone)+'"><i class="fas fa-phone-alt"></i>'+esc(c.phone)+'</a>' : '<span class="no-phone">لا يوجد رقم</span>';
+        const isPending = c.status === 'pending';
+        const pidx      = cachedPending.findIndex(x => x.id === c.id);
+        const isFirst   = isPending && pidx === 0;
+        const t         = new Date(c.created_at).toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+        const phoneHtml = c.phone
+            ? '<a class="phone-btn" href="tel:' + esc(c.phone) + '"><i class="fas fa-phone-alt"></i>' + esc(c.phone) + '</a>'
+            : '<span class="no-phone">لا يوجد رقم</span>';
         const card = document.createElement('div');
-        card.className = 'customer-card'+(isFirst?' first-in-queue':'');
-        card.innerHTML = '<div class="card-status-bar '+(isPending?'status-pending':'status-approved')+'"></div>'+(isPending?'<div class="turn-badge">'+(pidx+1)+'</div>':'')+
-            '<div class="customer-header"><div class="customer-info"><div class="customer-avatar"><i class="fa-solid fa-user"></i></div><div class="customer-details"><h3>'+esc(c.customer_name)+'</h3><span style="font-size:11px;color:var(--muted);"><i class="fa-regular fa-clock"></i> '+t+'</span></div></div><span class="status-badge '+(isPending?'badge-pending':'badge-approved')+'">'+
-            (isPending?'ينتظر':'✂️ يحلق الآن')+'</span></div><div class="phone-row">'+phoneHtml+'</div><div>'+
-            (isPending ? '<button class="btn btn-call" onclick="doUpdate('+c.id+',\'approved\',this)"><i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي</button>' : '<button class="btn btn-done" onclick="doUpdate('+c.id+',\'completed\',this)"><i class="fa-solid fa-check-double"></i> إنهاء الخدمة</button>')+'</div>';
+        card.className = 'customer-card' + (isFirst ? ' first-in-queue' : '');
+        card.innerHTML =
+            '<div class="card-status-bar ' + (isPending ? 'status-pending' : 'status-approved') + '"></div>' +
+            (isPending ? '<div class="turn-badge">' + (pidx + 1) + '</div>' : '') +
+            '<div class="customer-header"><div class="customer-info">' +
+            '<div class="customer-avatar"><i class="fa-solid fa-user"></i></div>' +
+            '<div class="customer-details"><h3>' + esc(c.customer_name) + '</h3>' +
+            '<span style="font-size:11px;color:var(--muted);"><i class="fa-regular fa-clock"></i> ' + t + '</span></div></div>' +
+            '<span class="status-badge ' + (isPending ? 'badge-pending' : 'badge-approved') + '">' +
+            (isPending ? 'ينتظر' : '✂️ يحلق الآن') + '</span></div>' +
+            '<div class="phone-row">' + phoneHtml + '</div><div>' +
+            (isPending
+                ? '<button class="btn btn-call" onclick="doUpdate(' + c.id + ',\'approved\',this)"><i class="fa-solid fa-bullhorn"></i> استدعاء للكرسي</button>'
+                : '<button class="btn btn-done" onclick="doUpdate(' + c.id + ',\'completed\',this)"><i class="fa-solid fa-check-double"></i> إنهاء الخدمة</button>') +
+            '</div>';
         div.appendChild(card);
     });
 }
@@ -417,37 +403,53 @@ async function doUpdate(id, newStatus, btn) {
     if (btn.disabled) return;
     btn.disabled = true;
     try {
-        const {error} = await db.from('appointments').update({status:newStatus}).eq('id',id);
-        if (error) { alert('خطأ: '+error.message); btn.disabled=false; return; }
+        const { error } = await db.from('appointments').update({ status: newStatus }).eq('id', id);
+        if (error) { alert('خطأ: ' + error.message); btn.disabled = false; return; }
         await fetchQueue();
-    } catch(e) { alert('خطأ في الاتصال'); btn.disabled=false; }
+    } catch(e) { alert('خطأ في الاتصال'); btn.disabled = false; }
 }
 
-function esc(s){ return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''; }
+function esc(s) {
+    return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : '';
+}
 
+// ── ✅ تحديث فوري حقيقي — بدون أي polling ──
 async function setupRealtime() {
     try {
-        db.channel('appointments-changes')
+        db.channel('salon-admin')
             .on('postgres_changes',
-                {event: 'INSERT', schema: 'public', table: 'appointments'},
-                (payload) => { fetchQueue(); }
+                { event: 'INSERT', schema: 'public', table: 'appointments' },
+                () => fetchQueue()
             )
             .on('postgres_changes',
-                {event: 'UPDATE', schema: 'public', table: 'appointments'},
-                (payload) => { fetchQueue(); }
+                { event: 'UPDATE', schema: 'public', table: 'appointments' },
+                () => fetchQueue()
             )
-            .subscribe();
-    } catch(e) {}
+            .on('postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'appointments' },
+                () => fetchQueue()
+            )
+            .on('postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'salon_status' },
+                (payload) => renderToggle(payload.new.is_open)
+            )
+            .subscribe((status) => {
+                if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+                    console.warn('إعادة الاتصال...');
+                    setTimeout(setupRealtime, 4000);
+                }
+            });
+    } catch(e) {
+        setTimeout(setupRealtime, 4000);
+    }
 }
 
+// ── تشغيل ──
 registerSW();
 checkNotifStatus();
 fetchStatus();
 fetchQueue();
 setupRealtime();
-
-setInterval(fetchQueue, 3000);
-setInterval(fetchStatus, 8000);
 </script>
 </body>
 </html>
